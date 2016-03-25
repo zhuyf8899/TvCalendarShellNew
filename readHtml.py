@@ -1,0 +1,220 @@
+#!/usr/local/bin/python
+# -*- coding: UTF-8 -*-
+import urllib  
+import urllib2
+import cookielib
+import re
+import string
+from bs4 import BeautifulSoup
+import json
+import sys
+import math
+from database import Database
+
+class Reader(object):
+    """读取HTML的类"""
+    def __init__(self, config):
+        reload(sys)
+        sys.setdefaultencoding('utf-8')
+        self.config = config
+        self.AllShowsList = ['0','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
+        self.month = {
+            'Jan' : '01',
+            'Feb' : '02',
+            'Mar' : '03',
+            'Apr' : '04',
+            'May' : '05',
+            'Jun' : '06',
+            'Jul' : '07',
+            'Aug' : '08',
+            'Sep' : '09',
+            'Oct' : '10',
+            'Nov' : '11',
+            'Dec' : '12'
+        }
+
+    def allShowsWork(self):
+        for i in xrange(0,len(self.AllShowsList)):  #注意这里是0~len，并不是0~len-1
+            cookie = cookielib.CookieJar()
+            opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie))
+            #urlX = 'http://www.pogdesign.co.uk/cat/all-shows/0'
+            req = urllib2.Request(
+                #从config中取出Allshows的所需要的url，加上上面那个数组所对应的头字母
+                url = self.config.urlAllShows+self.AllShowsList[i]
+            )
+            htmlData = ""
+            #获取网页原始数据
+            htmlData = opener.open(req).read()
+            if htmlData:
+                for OneBox in BeautifulSoup(htmlData).findAll('div', attrs={'class' : 'contbox prembox removed'}) : #用bs取到所有的小box，每个box是一个剧名
+                    imageURL = str(BeautifulSoup(str(OneBox)).a['style'])                                           #此处获取到的是图片URL的一段style的js连接，需要精加工
+                    statusStringArray = BeautifulSoup(str(OneBox)).findAll('span',attrs={'class':'hil selby'})      #此处是要获得剧状态的span标签
+                    statusString = str(statusStringArray[0].get_text()).split('|')                                  #此处是要获得span标签中的内容，之后把|左半拉的内容取出来，但是由于含有空格需要精加工
+                    aShow = {
+                        's_name' : BeautifulSoup(str(OneBox)).h2.get_text(),
+                        's_sibox_image' : imageURL[22:-2],
+                        'link' : BeautifulSoup(str(OneBox)).a['href'],
+                        'status' : statusString[0][1:-1]
+                    }
+
+                    db = Database(self.config)
+                    db.insertShowFirstTime(aShow)
+                    #print(aShow)
+
+    def showDetailsWork(self,urlShow,s_id):
+        cookie = cookielib.CookieJar()
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie))
+        req = urllib2.Request(
+            #从config中取出Allshows的所需要的url，加上上面那个数组所对应的头字母
+            url = urlShow
+        )
+        htmlData = ""
+        #获取网页原始数据
+        htmlData = opener.open(req).read()
+        if htmlData:
+            reString = '</span>\s.*</div>'  #要匹配的正则表达式
+            bsContent = BeautifulSoup(htmlData)
+            pinfo = bsContent.p.get_text()  #要取到的剧的介绍
+            pinfo = pinfo.replace("'", "\\'")
+            #print(str(pinfo))
+            DivLarge = bsContent.find('div',attrs={'class':'sumdata'})
+            DivSmall = DivLarge.findAll('div')
+            #处理每周日期
+            update_time = re.search(reString,str(DivSmall[1])).group()
+            update_time = update_time[8:-6]
+            #print(update_time)
+            #处理每集长度
+            length = re.search(reString,str(DivSmall[2])).group()
+            length = length[8:-6]
+            #print(length)
+            #查找地区、电视台
+            area = re.search(reString,str(DivSmall[3])).group()
+            area = area[8:-6]
+            channel = re.search(reString,str(DivSmall[4])).group()
+            channel = channel[8:-6]
+            DetailOfShow = {
+                's_id' : s_id,
+                's_description' : pinfo,
+                'update_time' : update_time,
+                'length' : length,
+                'area' : area,
+                'channel' : channel
+            }
+            db = Database(self.config)
+            db.updateShowDetail(DetailOfShow)
+
+    def finishAllShows(self):
+        db = Database(self.config)
+        perPage = 100.0
+        itemCount = db.selectCountShows()
+        pageCount = int(math.ceil(float(itemCount) / perPage))
+        for i in xrange(0,pageCount):
+            print(i)
+            ids = db.selectSidAndSlinkByLimit(i*100,100)
+            for idOne in ids:
+                #print(idOne[0])
+                print(self.config.url+idOne[1])
+                self.showDetailsWork(self.config.url+idOne[1],idOne[0])
+
+    def testerInEpisode(self,s_id = 1):
+        url = 'http://www.pogdesign.co.uk/cat/The-Big-Bang-Theory-summary'
+        cookie = cookielib.CookieJar()
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie))
+        req = urllib2.Request(
+            #从config中取出Allshows的所需要的url，加上上面那个数组所对应的头字母
+            url = url
+        )
+        htmlData = ""
+        #获取网页原始数据
+        htmlData = opener.open(req).read()
+        if htmlData:
+            bsContent = BeautifulSoup(htmlData)
+            for bsToBeAired in bsContent.findAll('div',attrs={'class':' altrow'}):  #遍历查找即将播放的集
+                seEpInfo = bsToBeAired.find('span',attrs = {'class' : 'epuntil'}).get_text()    #季与集的信息
+                season = re.search('S\d*',seEpInfo).group()     #首先用正则取出季，形如S02
+                if season[1] == '0':                            #之后将S和多余的0都去掉
+                    season = season[2:]
+                else:
+                    season = season[1:]
+                episode = re.search('E\d*',seEpInfo).group()    #同理对付集数
+                if episode[1] == '0':
+                    episode = episode[2:]
+                else:
+                    episode = episode[1:]
+                dateInfo = bsToBeAired.find('span',attrs = {'class' : 'epdate'}).get_text()     #接下来处理日期，比较折腾
+                year = re.search("'.*$",dateInfo).group()                                       #首先摘出形如‘16的表示年份的字串，并取出前面的’
+                year = year[1:]
+                month = re.search(' \w{3} ',dateInfo).group()                                   #接着取出三个代表月份的字母，形如Feb，并删除前后空格
+                month = month[1:-1]
+                day = re.search('^\d*',dateInfo).group()                                        #再之后取出日期，如果日期是个位数前面补零以保证yyyy-mm-dd的格式
+                if len(day) < 2:
+                    day = '0'+day
+                time = bsToBeAired.find('span',attrs = {'class' : 'eptime'}).get_text()         #取出日期后开始调整时间，利用类似的方法获取小时和分钟
+                hour = re.search('\d{1,2}:',time).group()
+                hour = hour[:-1]
+                hour = string.atoi(hour)
+                minute = re.search(':\d{2}[a|p]m',time).group()                                 #注意调整am和pm的时间差，另外需要注意的是这里的时间都是标准UTC时间，天朝使用需要+8
+                if minute[-2] == 'p':
+                    hour += 12
+                minute = minute[1:-2]
+                    
+                dateFormat = '20' + year + '-' +  self.month[month] + '-' + day + ' ' + str(hour) + ':' + minute +':00'
+                name = bsToBeAired.find('span',attrs = {'class' : 'epname'}).get_text()
+                
+                episodeInfoToBeAired = {
+                    's_id' : s_id,
+                    'se_id' : season,
+                    'e_num' : episode,
+                    'e_name' : name,
+                    'e_status' : u"即将播出",
+                    'e_time' : dateFormat
+
+                }
+                print(episodeInfoToBeAired)
+            for bsHaveAired in bsContent.findAll('div',attrs = {'class':'prevlist'}):           #接下来是历史播放处理，需要注意的是这里代码与前一段高度吻合，修改时稍加注意
+                seEpInfo = bsHaveAired.find('span',attrs = {'class' : 'epuntil'}).get_text()
+                season = re.search('S\d*',seEpInfo).group()
+                if season[1] == '0':
+                    season = season[2:]
+                else:
+                    season = season[1:]
+                episode = re.search('E\d*',seEpInfo).group()
+                if episode[1] == '0':
+                    episode = episode[2:]
+                else:
+                    episode = episode[1:]
+                dateInfo = bsHaveAired.find('span',attrs = {'class' : 'epdate'}).get_text()
+                year = re.search("'.*$",dateInfo).group()
+                year = year[1:]
+                month = re.search(' \w{3} ',dateInfo).group()
+                month = month[1:-1]
+                day = re.search('^\d*',dateInfo).group()
+                if len(day) < 2:
+                    day = '0'+day
+                time = bsToBeAired.find('span',attrs = {'class' : 'eptime'}).get_text()
+                hour = re.search('\d{1,2}:',time).group()
+                hour = hour[:-1]
+                hour = string.atoi(hour)
+                minute = re.search(':\d{2}[a|p]m',time).group()
+                if minute[-2] == 'p':
+                    hour += 12
+                minute = minute[1:-2]
+                    
+                dateFormat = '20' + year + '-' +  self.month[month] + '-' + day + ' ' + str(hour) + ':' + minute +':00'
+                name =  bsHaveAired.find('span',attrs = {'class' : 'epname'}).get_text()
+                name = name[1:]
+                
+                episodeInfoHaveAired = {
+                    's_id' : s_id,
+                    'se_id' : season,
+                    'e_num' : episode,
+                    'e_name' : name,
+                    'e_status' : u"已播出",
+                    'e_time' : dateFormat
+
+                }
+                print(episodeInfoHaveAired)
+
+
+
+
