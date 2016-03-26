@@ -1,15 +1,17 @@
 #!/usr/local/bin/python
 # -*- coding: UTF-8 -*-
+#readHtml.py:网页文档解析器模块
 import urllib  
 import urllib2
 import cookielib
 import re
 import string
-from bs4 import BeautifulSoup
 import json
 import sys
 import math
+from bs4 import BeautifulSoup
 from database import Database
+from log import Log
 
 class Reader(object):
     """读取HTML的类"""
@@ -17,7 +19,10 @@ class Reader(object):
         reload(sys)
         sys.setdefaultencoding('utf-8')
         self.config = config
+        self.log = Log()
+        #剧名的字母顺序表
         self.AllShowsList = ['0','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
+        #月份换算表
         self.month = {
             'Jan' : '01',
             'Feb' : '02',
@@ -32,66 +37,88 @@ class Reader(object):
             'Nov' : '11',
             'Dec' : '12'
         }
+        
 
     def allShowsWork(self):
+        #初步获取show的方法
         for i in xrange(0,len(self.AllShowsList)):  #注意这里是0~len，并不是0~len-1
+            try:
+                cookie = cookielib.CookieJar()
+                opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie))
+                #urlX = 'http://www.pogdesign.co.uk/cat/all-shows/0'
+                req = urllib2.Request(
+                    #从config中取出Allshows的所需要的url，加上上面那个数组所对应的头字母
+                    url = self.config.urlAllShows+self.AllShowsList[i]
+                )
+                htmlData = ""
+                #获取网页原始数据
+                htmlData = opener.open(req).read()
+            except Exception, connErr:
+                self.log.takeLog('ERROR','Connection Error:' + str(connErr))
+            if htmlData:
+                try:
+                    for OneBox in BeautifulSoup(htmlData).findAll('div', attrs={'class' : 'contbox prembox removed'}) : #用bs取到所有的小box，每个box是一个剧名
+                        imageURL = str(BeautifulSoup(str(OneBox)).a['style'])                                           #此处获取到的是图片URL的一段style的js连接，需要精加工
+                        statusStringArray = BeautifulSoup(str(OneBox)).find('span',attrs={'class':'hil selby'})         #此处是要获得剧状态的span标签
+                        statusString = str(statusStringArray.get_text()).split('|')                                     #此处是要获得span标签中的内容，之后把|左半拉的内容取出来，但是由于含有空格需要精加工
+                        aShow = {
+                            's_name' : BeautifulSoup(str(OneBox)).h2.get_text(),
+                            's_sibox_image' : imageURL[22:-2],
+                            'link' : BeautifulSoup(str(OneBox)).a['href'],
+                            'status' : statusString[1:-1]
+                        }
+                        #print(aShow)
+                        if aShow['s_name'] == '' or aShow['link'] == '' or aShow['status'] == '' :
+                            self.log.takeLog('WARNING','''allShowsWork function cannot collect data correctly, the vars are like below:\n s_name=%s,s_sibox_image=%s,link=%s,status=%s'''%(aShow['s_name'],aShow['s_sibox_image'],aShow['link'],aShow['status']))
+                except Exception, syntaxErr:
+                    self.log.takeLog('ERROR','Syntax Tree Error:' + str(syntaxErr))
+                try:
+                    db = Database(self.config)
+                    db.insertShowFirstTime(aShow)
+                except Exception, DBErr:
+                    self.log.takeLog('ERROR','Database Error:' + str(DBErr))
+        return
+
+    def showDetailsWork(self,urlShow,s_id):
+        #针对一部剧，完成其show的剩余字段和完成分季和分集的方法
+        try:
             cookie = cookielib.CookieJar()
             opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie))
-            #urlX = 'http://www.pogdesign.co.uk/cat/all-shows/0'
             req = urllib2.Request(
                 #从config中取出Allshows的所需要的url，加上上面那个数组所对应的头字母
-                url = self.config.urlAllShows+self.AllShowsList[i]
+                url = urlShow
             )
             htmlData = ""
             #获取网页原始数据
             htmlData = opener.open(req).read()
-            if htmlData:
-                for OneBox in BeautifulSoup(htmlData).findAll('div', attrs={'class' : 'contbox prembox removed'}) : #用bs取到所有的小box，每个box是一个剧名
-                    imageURL = str(BeautifulSoup(str(OneBox)).a['style'])                                           #此处获取到的是图片URL的一段style的js连接，需要精加工
-                    statusStringArray = BeautifulSoup(str(OneBox)).findAll('span',attrs={'class':'hil selby'})      #此处是要获得剧状态的span标签
-                    statusString = str(statusStringArray[0].get_text()).split('|')                                  #此处是要获得span标签中的内容，之后把|左半拉的内容取出来，但是由于含有空格需要精加工
-                    aShow = {
-                        's_name' : BeautifulSoup(str(OneBox)).h2.get_text(),
-                        's_sibox_image' : imageURL[22:-2],
-                        'link' : BeautifulSoup(str(OneBox)).a['href'],
-                        'status' : statusString[0][1:-1]
-                    }
-
-                    db = Database(self.config)
-                    db.insertShowFirstTime(aShow)
-                    #print(aShow)
-
-    def showDetailsWork(self,urlShow,s_id):
-        cookie = cookielib.CookieJar()
-        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie))
-        req = urllib2.Request(
-            #从config中取出Allshows的所需要的url，加上上面那个数组所对应的头字母
-            url = urlShow
-        )
-        htmlData = ""
-        #获取网页原始数据
-        htmlData = opener.open(req).read()
+        except Exception, connErr:
+            self.log.takeLog('ERROR','Connection Error:' + str(connErr))
+        
         if htmlData:
-            reString = '</span>\s.*</div>'  #要匹配的正则表达式
-            bsContent = BeautifulSoup(htmlData)
-            pinfo = bsContent.p.get_text()  #要取到的剧的介绍
-            pinfo = pinfo.replace("'", "\\'")
-            #print(str(pinfo))
-            DivLarge = bsContent.find('div',attrs={'class':'sumdata'})
-            DivSmall = DivLarge.findAll('div')
-            #处理每周日期
-            update_time = re.search(reString,str(DivSmall[1])).group()
-            update_time = update_time[8:-6]
-            #print(update_time)
-            #处理每集长度
-            length = re.search(reString,str(DivSmall[2])).group()
-            length = length[8:-6]
-            #print(length)
-            #查找地区、电视台
-            area = re.search(reString,str(DivSmall[3])).group()
-            area = area[8:-6]
-            channel = re.search(reString,str(DivSmall[4])).group()
-            channel = channel[8:-6]
+            try:
+                reString = '</span>\s.*</div>'  #要匹配的正则表达式
+                bsContent = BeautifulSoup(htmlData)
+                pinfo = bsContent.p.get_text()  #要取到的剧的介绍
+                pinfo = pinfo.replace("'", "\\'")
+                #print(str(pinfo))
+                DivLarge = bsContent.find('div',attrs={'class':'sumdata'})
+                DivSmall = DivLarge.findAll('div')
+                #处理每周日期
+                update_time = re.search(reString,str(DivSmall[1])).group()
+                update_time = update_time[8:-6]
+                #print(update_time)
+                #处理每集长度
+                length = re.search(reString,str(DivSmall[2])).group()
+                length = length[8:-6]
+                #print(length)
+                #查找地区、电视台
+                area = re.search(reString,str(DivSmall[3])).group()
+                area = area[8:-6]
+                channel = re.search(reString,str(DivSmall[4])).group()
+                channel = channel[8:-6]
+            except Exception, ReErr:
+                self.log.takeLog('ERROR','Regular Expression Error:' + str(ReErr))
+            
             DetailOfShow = {
                 's_id' : s_id,
                 's_description' : pinfo,
@@ -100,23 +127,37 @@ class Reader(object):
                 'area' : area,
                 'channel' : channel
             }
-            db = Database(self.config)
-            db.updateShowDetail(DetailOfShow)
+            if DetailOfShow['s_description'] == '':
+                self.log.takeLog('WARNING','''allShowsWork function cannot collect data correctly, the vars are like below:\nDetailOfShow:%s'''%(str(DetailOfShow)))
+            try:
+                db = Database(self.config)
+                db.updateShowDetail(DetailOfShow)
+            except Exception, DBErr:
+                self.log.takeLog('ERROR','Database Error:' + str(DBErr))
+        return
+            
 
     def finishAllShows(self):
-        db = Database(self.config)
-        perPage = 100.0
-        itemCount = db.selectCountShows()
-        pageCount = int(math.ceil(float(itemCount) / perPage))
-        for i in xrange(0,pageCount):
-            print(i)
-            ids = db.selectSidAndSlinkByLimit(i*100,100)
-            for idOne in ids:
-                #print(idOne[0])
-                print(self.config.url+idOne[1])
-                self.showDetailsWork(self.config.url+idOne[1],idOne[0])
+        #补充show表剩余内容的方法入口，即showDetailsWork的总入口
+        try:
+            db = Database(self.config)
+            perPage = 100.0
+            itemCount = db.selectCountShows()
+            pageCount = int(math.ceil(float(itemCount) / perPage))
+            for i in xrange(0,pageCount):
+                #print(i)
+                ids = db.selectSidAndSlinkByLimit(i*100,100)
+                for idOne in ids:
+                    #print(idOne[0])
+                    print(self.config.url+idOne[1])
+                    self.showDetailsWork(self.config.url+idOne[1],idOne[0])
+        except Exception, DBErr:
+            self.log.takeLog('ERROR','Database Error:' + str(DBErr))
+        return
+        
 
     def testerInEpisode(self,s_id = 1):
+        #测试用方法，仅用于调试
         url = 'http://www.pogdesign.co.uk/cat/The-Big-Bang-Theory-summary'
         cookie = cookielib.CookieJar()
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie))

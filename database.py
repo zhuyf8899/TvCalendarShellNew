@@ -1,5 +1,6 @@
 #!/usr/local/bin/python
 # -*- coding: UTF-8 -*-
+#数据库模块
 import MySQLdb
 
 

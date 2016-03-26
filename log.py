@@ -1,5 +1,6 @@
 #!/usr/local/bin/python
 # -*- coding: UTF-8 -*-
+#log.py:日志模块
 import time
 import os
 

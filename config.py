@@ -1,5 +1,6 @@
 #!/usr/local/bin/python
 # -*- coding: UTF-8 -*-
+#config.py:配置文件
 class Config(object):
 	"""settings like url and so on."""
 	def __init__(self):
