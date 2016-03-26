@@ -11,24 +11,25 @@ class Database(object):
 		self.user = u
 		self.passwd = p
 		self.db = d
-		self.fileHandler = fileHandler
+		self.log = fileHandler
 	def __init__(self,fileHandler,config):
 		self.host = config.dataBaseHost
 		self.user = config.dataBaseUser
 		self.passwd = config.dataBasePwd
 		self.db = config.dataBasedb
-		self.fileHandler = fileHandler
-	def __init__(self,config):
-		self.host = config.dataBaseHost
-		self.user = config.dataBaseUser
-		self.passwd = config.dataBasePwd
-		self.db = config.dataBasedb
-		#self.fileHandler = fileHandler
+		self.log = fileHandler
+	# def __init__(self,config):
+	# 	self.host = config.dataBaseHost
+	# 	self.user = config.dataBaseUser
+	# 	self.passwd = config.dataBasePwd
+	# 	self.db = config.dataBasedb
+
 	def connect(self):
 		try:
 			conn = MySQLdb.connect(host=self.host,user=self.user,passwd=self.passwd,db=self.db,charset='utf8')
 		except Exception, e:
 			print(e)
+			self.log.takeLog('ERROR','Database Connection Error:'+str(e))
 			#self.fileHandler.write(str(e))
 			return "connectError"
 		return conn
@@ -43,24 +44,25 @@ class Database(object):
 			if checker:
 				if checker[2] == obj['status'] and checker[3] == obj['s_sibox_image'] and checker[4] == obj['link']:
 					dbc.close()
-					print("repeat\n")
+					print("repeatShow:"+str(obj['s_name']))
 					return "Repeat"
 				else:
 					sqlUpdate = '''UPDATE `shows` SET  `status` =  \'%s\',`s_sibox_image` =  \'%s\',`link` =  \'%s\' WHERE  `shows`.`s_id` = %s;'''%(obj['status'],obj['s_sibox_image'],obj['link'],checker[0])
 					cursor.execute(sqlUpdate)
 					dbc.commit()
 					dbc.close()
-					print('update\n')
+					print('updateShow:'+str(obj['s_name']))
 					return "Update"
 			else:
 				sqlInsert = '''insert into shows(s_name,status,s_sibox_image,link) values(\"%s\",\"%s\",\"%s\",\"%s\")'''%(obj['s_name'],obj['status'],obj['s_sibox_image'],obj['link'])
 				cursor.execute(sqlInsert)
 				dbc.commit()
 				dbc.close()
-				print('insert')
+				print('insertNewShow:'+str(obj['s_name']))
 				return "OK"
 		except Exception,e:
 			print(e)
+			self.log.takeLog('ERROR','Table shows inserting error:'+str(e))
 			dbc.close()
 			return "Error"
 
@@ -72,13 +74,13 @@ class Database(object):
 			cursor.execute(sqlUpdate)
 			dbc.commit()
 			dbc.close()
-			print('update')
-			return "Finished"
+			print('update details: '+ str(obj['s_id']))
+			return "OK"
 		except Exception,e:
 			print(e)
-			print(sqlUpdate)
+			#print(sqlUpdate)
+			self.log.takeLog('ERROR','Table show updating error:'+str(e))
 			dbc.close()
-			exit()
 			return "Error"
 
 	def selectCountShows(self):
@@ -92,6 +94,7 @@ class Database(object):
 			return counter[0]
 		except Exception,e:
 			print(e)
+			self.log.takeLog('ERROR','Table show selecting error:'+ str(e))
 			dbc.close()
 			return "Error"
 	def selectSidAndSlinkByLimit(self,numLow,numCount):
@@ -105,8 +108,76 @@ class Database(object):
 			return counter
 		except Exception,e:
 			print(e)
+			self.log.takeLog('ERROR','Table show selecting error:'+ str(e))
 			dbc.close()
 			return "Error"
+	def selctNewestSeason(self,s_id):
+		try:
+			dbc = self.connect()
+			cursor = dbc.cursor()
+			sqlCheck = '''select se_id from episode where s_id = %s order by se_id desc limit 1'''%(s_id)
+			cursor.execute(sqlCheck)
+			counter = cursor.fetchone()
+			dbc.close()
+			if counter == None:
+				return 0
+			else:
+				return counter[0]
+		except Exception, e:
+			self.log.takeLog('ERROR','Table episode selecting error:'+ str(e))
+			print(e)
+			dbc.close()
+			return "Error"
+	def insertEpisode(self,aRecord):
+		try:
+			dbc = self.connect()
+			cursor = dbc.cursor()
+			sqlCheck = '''select e_id,e_name,e_status,DATE_FORMAT(e_time,'%%Y-%%m-%%e %%T') from episode where s_id = %s AND se_id = %s AND e_num = %s'''%(aRecord['s_id'],aRecord['se_id'],aRecord['e_num'])
+			cursor.execute(sqlCheck)
+			checker = cursor.fetchone()
+			#print(checker)
+			if checker:
+				if checker[1] == aRecord['e_name'] and checker[2] == aRecord['e_status'] and checker[3] == aRecord['e_time']:
+					print('An episode record has been existed:'+str(aRecord['s_id'])+':S'+str(aRecord['se_id'])+'E'+str(aRecord['e_num']))
+					dbc.close()
+					return "Repeat"
+				else:
+					sqlUpdate = '''UPDATE `episode` SET `e_name` = \'%s\',`e_status` = \'%s\',`e_description` = \'%s\',`e_time` = \'%s\' WHERE `e_id` = \'%s\''''%(aRecord['e_name'],aRecord['e_status'],aRecord['e_description'],aRecord['e_time'],checker[0])
+					cursor.execute(sqlUpdate)
+					dbc.commit()
+					print('An episode record has been updated:'+str(checker[0]))
+					dbc.close()
+					return "Update"
+			else:
+				sqlInsert = '''insert into episode(s_id,se_id,e_name,e_num,e_status,e_description,e_time) values(\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\")'''%(aRecord['s_id'],aRecord['se_id'],aRecord['e_name'],aRecord['e_num'],aRecord['e_status'],aRecord['e_description'],aRecord['e_time'])
+				cursor.execute(sqlInsert)
+				dbc.commit()
+				dbc.close()
+				print('A record has been inserted:'+str(aRecord['s_id'])+':S'+str(aRecord['se_id'])+'E'+str(aRecord['e_num']))
+				return "OK"
+		except Exception, e:
+			self.log.takeLog('ERROR','Table episode inserting error:'+ str(e))
+			dbc.close()
+			return "Error"
+	def getOneLinkBySid(self,s_id):
+		try:
+			dbc = self.connect()
+			cursor = dbc.cursor()
+			sqlCheck = '''select link from shows where s_id = %s limit 1'''%(s_id)
+			cursor.execute(sqlCheck)
+			link = cursor.fetchone()
+			dbc.close()
+			if link == None:
+				self.log.takeLog("WARNING","An empty select query has been requested. sql = "+ str(sqlCheck))
+				return ""
+			else:
+				return link[0]
+		except Exception, e:
+			self.log.takeLog('ERROR','Table episode selecting error:'+ str(e))
+			print(e)
+			dbc.close()
+			return "Error"
+		
 	# def getAllNames(self):
 	# 	try:
 	# 		dbc = self.connect()

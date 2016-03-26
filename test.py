@@ -4,11 +4,14 @@
 from config import Config
 from readHtml import Reader
 from log import Log
+from tools import Tools
 
 config = Config()
 reader = Reader(config)
-reader.allShowsWork()
-reader.finishAllShows()
+#tools = Tools(config)
+#tools.workWithOneShowsEp(1)
+#reader.allShowsWork()
+reader.finishAllShows(True)
 #reader.testerInEpisode()
 
-print("FUCK")
+print("Done.")
