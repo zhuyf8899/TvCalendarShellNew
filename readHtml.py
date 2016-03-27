@@ -135,6 +135,8 @@ class Reader(object):
                 db.updateShowDetail(DetailOfShow)
             except Exception, DBErr:
                 self.log.takeLog('ERROR','Database Error:' + str(DBErr))
+                self.log.takeLog('DEBUG','problem in showDetailsWork->collecting things in updating shows:')
+
 
             #下一步开始整季和集
             try:
@@ -241,7 +243,8 @@ class Reader(object):
                     else:
                         db.insertEpisode(episodeInfoHaveAired)
             except Exception, DBErr:
-                self.log.takeLog('ERROR','Database Error:' + str(DBErr))         
+                self.log.takeLog('ERROR','Database Error:' + str(DBErr)) 
+                self.log.takeLog('DEBUG','problem in showDetailsWork->collecting things in season and eps:')
         return
             
 
@@ -261,6 +264,7 @@ class Reader(object):
                     self.showDetailsWork(self.config.url+idOne[1],idOne[0],firstTime)
         except Exception, DBErr:
             self.log.takeLog('ERROR','Database Error:' + str(DBErr))
+            self.log.takeLog('DEBUG','current pageCount:'+str(pageCount))
         return
         
 
