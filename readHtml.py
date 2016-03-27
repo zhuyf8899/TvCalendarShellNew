@@ -165,11 +165,14 @@ class Reader(object):
                     hour = hour[:-1]
                     hour = string.atoi(hour)
                     minute = re.search(':\d{2}[a|p]m',time).group()                                 #注意调整am和pm的时间差，另外需要注意的是这里的时间都是标准UTC时间，天朝使用需要+8
-                    if (minute[-2] == 'p') and (minute[1:2] != '12'):
+                    if (minute[-2] == 'p') and (hour != 12):
                         hour += 12
+                    hour = str(hour)
+                    if len(hour) == 1:
+                        hour = '0' + hour
                     minute = minute[1:-2]
                         
-                    dateFormat = '20' + year + '-' +  self.month[month] + '-' + day + ' ' + str(hour) + ':' + minute +':00'
+                    dateFormat = '20' + year + '-' +  self.month[month] + '-' + day + ' ' + hour + ':' + minute +':00'
                     name = bsToBeAired.find('span',attrs = {'class' : 'epname'}).get_text()
                     name = name.replace("'","\\'")
                     
@@ -212,11 +215,13 @@ class Reader(object):
                     hour = hour[:-1]
                     hour = string.atoi(hour)
                     minute = re.search(':\d{2}[a|p]m',time).group()
-                    if (minute[-2] == 'p') and (minute[1:2] != '12'):
+                    if (minute[-2] == 'p') and (hour != 12):
                         hour += 12
+                    hour = str(hour)
+                    if len(hour) == 1:
+                        hour = '0' + hour
                     minute = minute[1:-2]
-                        
-                    dateFormat = '20' + year + '-' +  self.month[month] + '-' + day + ' ' + str(hour) + ':' + minute +':00'
+                    dateFormat = '20' + year + '-' +  self.month[month] + '-' + day + ' ' + hour + ':' + minute +':00'
                     name =  bsHaveAired.find('span',attrs = {'class' : 'epname'}).get_text()
                     name = name[1:]
                     name = name.replace("'","\\'")
@@ -231,7 +236,7 @@ class Reader(object):
                         'e_time' : dateFormat
                     }
                     #print(episodeInfoHaveAired)
-                    if (newestSeason > episodeInfoHaveAired['se_id']) and (not firstTime):
+                    if (newestSeason > string.atoi(episodeInfoHaveAired['se_id'])) and (not firstTime):
                         continue
                     else:
                         db.insertEpisode(episodeInfoHaveAired)

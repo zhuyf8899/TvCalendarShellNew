@@ -37,8 +37,8 @@ class Database(object):
 		try:
 			dbc = self.connect()
 			cursor = dbc.cursor()
-			sqlCheck = '''select s_id,s_name,status,s_sibox_image,link from shows where s_name = \"%s\"'''%(obj['s_name'])
-			cursor.execute(sqlCheck)
+			sql = '''select s_id,s_name,status,s_sibox_image,link from shows where s_name = \'%s\''''%(obj['s_name'])
+			cursor.execute(sql)
 			checker = cursor.fetchone()
 			#print(checker)
 			if checker:
@@ -47,22 +47,22 @@ class Database(object):
 					print("repeatShow:"+str(obj['s_name']))
 					return "Repeat"
 				else:
-					sqlUpdate = '''UPDATE `shows` SET  `status` =  \'%s\',`s_sibox_image` =  \'%s\',`link` =  \'%s\' WHERE  `shows`.`s_id` = %s;'''%(obj['status'],obj['s_sibox_image'],obj['link'],checker[0])
-					cursor.execute(sqlUpdate)
+					sql = '''UPDATE `shows` SET  `status` =  \'%s\',`s_sibox_image` =  \'%s\',`link` =  \'%s\' WHERE  `shows`.`s_id` = %s;'''%(obj['status'],obj['s_sibox_image'],obj['link'],checker[0])
+					cursor.execute(sql)
 					dbc.commit()
 					dbc.close()
 					print('updateShow:'+str(obj['s_name']))
 					return "Update"
 			else:
-				sqlInsert = '''insert into shows(s_name,status,s_sibox_image,link) values(\"%s\",\"%s\",\"%s\",\"%s\")'''%(obj['s_name'],obj['status'],obj['s_sibox_image'],obj['link'])
-				cursor.execute(sqlInsert)
+				sql = '''insert into shows(s_name,status,s_sibox_image,link) values(\'%s\',\'%s\',\'%s\',\'%s\'')'''%(obj['s_name'],obj['status'],obj['s_sibox_image'],obj['link'])
+				cursor.execute(sql)
 				dbc.commit()
 				dbc.close()
 				print('insertNewShow:'+str(obj['s_name']))
 				return "OK"
 		except Exception,e:
 			print(e)
-			self.log.takeLog('ERROR','Table shows inserting error:'+str(e))
+			self.log.takeLog('ERROR','Table shows inserting error:'+str(e)+'\n the sql='+sql)
 			dbc.close()
 			return "Error"
 
@@ -79,7 +79,7 @@ class Database(object):
 		except Exception,e:
 			print(e)
 			#print(sqlUpdate)
-			self.log.takeLog('ERROR','Table show updating error:'+str(e))
+			self.log.takeLog('ERROR','Table show updating error:'+str(e)+'\n the sql='+sqlUpdate)
 			dbc.close()
 			return "Error"
 
@@ -94,7 +94,7 @@ class Database(object):
 			return counter[0]
 		except Exception,e:
 			print(e)
-			self.log.takeLog('ERROR','Table show selecting error:'+ str(e))
+			self.log.takeLog('ERROR','Table show selecting error:'+ str(e)+'\n the sql='+sqlCheck)
 			dbc.close()
 			return "Error"
 	def selectSidAndSlinkByLimit(self,numLow,numCount):
@@ -108,7 +108,7 @@ class Database(object):
 			return counter
 		except Exception,e:
 			print(e)
-			self.log.takeLog('ERROR','Table show selecting error:'+ str(e))
+			self.log.takeLog('ERROR','Table show selecting error:'+ str(e)+'\n the sql='+sqlCheck)
 			dbc.close()
 			return "Error"
 	def selctNewestSeason(self,s_id):
@@ -124,7 +124,7 @@ class Database(object):
 			else:
 				return counter[0]
 		except Exception, e:
-			self.log.takeLog('ERROR','Table episode selecting error:'+ str(e))
+			self.log.takeLog('ERROR','Table episode selecting error:'+ str(e)+'\n the sql='+sqlCheck)
 			print(e)
 			dbc.close()
 			return "Error"
@@ -132,31 +132,33 @@ class Database(object):
 		try:
 			dbc = self.connect()
 			cursor = dbc.cursor()
-			sqlCheck = '''select e_id,e_name,e_status,DATE_FORMAT(e_time,'%%Y-%%m-%%e %%T') from episode where s_id = %s AND se_id = %s AND e_num = %s'''%(aRecord['s_id'],aRecord['se_id'],aRecord['e_num'])
+			sqlCheck = '''select e_id,e_name,e_status,DATE_FORMAT(e_time,'%%Y-%%m-%%d %%T') from episode where s_id = %s AND se_id = %s AND e_num = %s'''%(aRecord['s_id'],aRecord['se_id'],aRecord['e_num'])
 			cursor.execute(sqlCheck)
 			checker = cursor.fetchone()
 			#print(checker)
 			if checker:
+				#print(checker)
+				#print(aRecord)
 				if checker[1] == aRecord['e_name'] and checker[2] == aRecord['e_status'] and checker[3] == aRecord['e_time']:
 					print('An episode record has been existed:'+str(aRecord['s_id'])+':S'+str(aRecord['se_id'])+'E'+str(aRecord['e_num']))
 					dbc.close()
 					return "Repeat"
 				else:
-					sqlUpdate = '''UPDATE `episode` SET `e_name` = \'%s\',`e_status` = \'%s\',`e_description` = \'%s\',`e_time` = \'%s\' WHERE `e_id` = \'%s\''''%(aRecord['e_name'],aRecord['e_status'],aRecord['e_description'],aRecord['e_time'],checker[0])
-					cursor.execute(sqlUpdate)
+					sql = '''UPDATE `episode` SET `e_name` = \'%s\',`e_status` = \'%s\',`e_description` = \'%s\',`e_time` = \'%s\' WHERE `e_id` = \'%s\''''%(aRecord['e_name'],aRecord['e_status'],aRecord['e_description'],aRecord['e_time'],checker[0])
+					cursor.execute(sql)
 					dbc.commit()
 					print('An episode record has been updated:'+str(checker[0]))
 					dbc.close()
 					return "Update"
 			else:
-				sqlInsert = '''insert into episode(s_id,se_id,e_name,e_num,e_status,e_description,e_time) values(\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\")'''%(aRecord['s_id'],aRecord['se_id'],aRecord['e_name'],aRecord['e_num'],aRecord['e_status'],aRecord['e_description'],aRecord['e_time'])
-				cursor.execute(sqlInsert)
+				sql = '''insert into episode(s_id,se_id,e_name,e_num,e_status,e_description,e_time) values(\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\'')'''%(aRecord['s_id'],aRecord['se_id'],aRecord['e_name'],aRecord['e_num'],aRecord['e_status'],aRecord['e_description'],aRecord['e_time'])
+				cursor.execute(sql)
 				dbc.commit()
 				dbc.close()
 				print('A record has been inserted:'+str(aRecord['s_id'])+':S'+str(aRecord['se_id'])+'E'+str(aRecord['e_num']))
 				return "OK"
 		except Exception, e:
-			self.log.takeLog('ERROR','Table episode inserting error:'+ str(e))
+			self.log.takeLog('ERROR','Table episode inserting error:'+ str(e)+' \nthe sql = '+sql)
 			dbc.close()
 			return "Error"
 	def getOneLinkBySid(self,s_id):
@@ -173,7 +175,7 @@ class Database(object):
 			else:
 				return link[0]
 		except Exception, e:
-			self.log.takeLog('ERROR','Table episode selecting error:'+ str(e))
+			self.log.takeLog('ERROR','Table episode selecting error:'+ str(e)+' \nthe sql = '+sqlCheck)
 			print(e)
 			dbc.close()
 			return "Error"

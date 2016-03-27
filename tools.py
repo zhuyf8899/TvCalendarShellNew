@@ -76,8 +76,9 @@ class Tools(object):
                 hour = re.search('\d{1,2}:',time).group()
                 hour = hour[:-1]
                 hour = string.atoi(hour)
-                minute = re.search(':\d{2}[a|p]m',time).group()                                 #注意调整am和pm的时间差，另外需要注意的是这里的时间都是标准UTC时间，天朝使用需要+8
-                if (minute[-2] == 'p') and (minute[1:2] != '12'):
+                minute = re.search(':\d{2}[a|p]m',time).group() 
+                #注意调整am和pm的时间差，另外需要注意的是这里的时间都是标准UTC时间，天朝使用需要+8
+                if (minute[-2] == 'p') and (hour != 12):
                     hour += 12
                 minute = minute[1:-2]
                     
@@ -123,7 +124,7 @@ class Tools(object):
                 hour = hour[:-1]
                 hour = string.atoi(hour)
                 minute = re.search(':\d{2}[a|p]m',time).group()
-                if (minute[-2] == 'p') and (minute[1:2] != '12'):
+                if (minute[-2] == 'p') and (hour != 12):
                     hour += 12
                 minute = minute[1:-2]
                     
