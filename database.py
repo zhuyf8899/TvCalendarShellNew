@@ -143,8 +143,8 @@ class Database(object):
 					dbc.close()
 					return "Repeat"
 				else:
-					self.log.takeLog('DEBUG','Before update a episode,record in db is :'+checker[1]+'|||'+checker[2]+'|||'+checker[3])
-					self.log.takeLog('DEBUG','Before update a episode,record in py is :'+aRecord['e_name']+'|||'+aRecord['e_status']+'|||'+aRecord['e_time'])
+					#self.log.takeLog('DEBUG','Before update a episode,record in db is :'+checker[1]+'|||'+checker[2]+'|||'+checker[3])
+					#self.log.takeLog('DEBUG','Before update a episode,record in py is :'+aRecord['e_name']+'|||'+aRecord['e_status']+'|||'+aRecord['e_time'])
 					sql = '''UPDATE `episode` SET `e_name` = \'%s\',`e_status` = \'%s\',`e_description` = \'%s\',`e_time` = \'%s\' WHERE `e_id` = \'%s\''''%(aRecord['e_name'],aRecord['e_status'],aRecord['e_description'],aRecord['e_time'],checker[0])
 					cursor.execute(sql)
 					dbc.commit()

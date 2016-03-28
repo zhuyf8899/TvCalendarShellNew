@@ -52,6 +52,13 @@ class Tools(object):
         if htmlData:
             bsContent = BeautifulSoup(htmlData)
             bsLists = bsContent.findAll('div',attrs = {'class':'box930 lists'})
+            if len(bsLists) >= 2:
+                    pass
+            elif len(bsLists) == 1:
+                bsLists.append(BeautifulSoup("<html><body><div>none</div></body></html>").find('div'))
+            else:
+                for i in xrange(1,3):
+                    bsLists.append(BeautifulSoup("<html><body><div>none</div></body></html>").find('div'))
             for bsToBeAired in bsLists[0].findAll('div'):  #遍历查找即将播放的集,如果没有则不执行该循环
                 seEpInfo = bsToBeAired.find('span',attrs = {'class' : 'epuntil'}).get_text()    #季与集的信息
                 season = re.search('S\d*',seEpInfo).group()     #首先用正则取出季，形如S02

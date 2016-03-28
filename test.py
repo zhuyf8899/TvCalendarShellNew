@@ -9,8 +9,10 @@ from tools import Tools
 
 config = Config()
 reader = Reader(config)
-#tools = Tools(config)
-#tools.workWithOneShowsEp(253)
+tools = Tools(config)
+tools.workWithOneShowsEp(1401)
+tools.workWithOneShowsEp(1402)
+tools.workWithOneShowsEp(1403)
 
 #reader.allShowsWork()
 reader.finishAllShows(False)

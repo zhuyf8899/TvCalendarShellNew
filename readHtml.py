@@ -128,20 +128,26 @@ class Reader(object):
                 'area' : area,
                 'channel' : channel
             }
-            if DetailOfShow['s_description'] == '':
+            if DetailOfShow['area'] == '' or DetailOfShow['channel'] =='':
                 self.log.takeLog('WARNING','''allShowsWork function cannot collect data correctly, the vars are like below:\nDetailOfShow:%s'''%(str(DetailOfShow)))
             try:
                 db = Database(self.log,self.config)
                 db.updateShowDetail(DetailOfShow)
             except Exception, DBErr:
                 self.log.takeLog('ERROR','Database Error:' + str(DBErr))
-                self.log.takeLog('DEBUG','problem in showDetailsWork->collecting things in updating shows:')
 
 
             #下一步开始整季和集
             try:
                 newestSeason = db.selctNewestSeason(s_id) #获取这部剧的最新一季
                 bsLists = bsContent.findAll('div',attrs = {'class':'box930 lists'})
+                if len(bsLists) >= 2:
+                    pass
+                elif len(bsLists) == 1:
+                    bsLists.append(BeautifulSoup("<html><body><div>none</div></body></html>").find('div'))
+                else:
+                    for i in xrange(1,3):
+                        bsLists.append(BeautifulSoup("<html>none</html>").find('div'))
                 for bsToBeAired in bsLists[0].findAll('div'):  #遍历查找即将播放的集,如果没有则不执行该循环
                     seEpInfo = bsToBeAired.find('span',attrs = {'class' : 'epuntil'}).get_text()    #季与集的信息
                     season = re.search('S\d*',seEpInfo).group()     #首先用正则取出季，形如S02
@@ -191,7 +197,6 @@ class Reader(object):
                     #print(episodeInfoToBeAired)
                     #由于即将播出的剧必为最新一季，因此不做检查一定更新
                     db.insertEpisode(episodeInfoToBeAired)
-
                 for bsHaveAired in bsLists[1].findAll('div',attrs = {'class':'prevlist'}):           #接下来是历史播放处理，需要注意的是这里代码与前一段高度吻合，修改时稍加注意
                     seEpInfo = bsHaveAired.find('span',attrs = {'class' : 'epuntil'}).get_text()
                     season = re.search('S\d*',seEpInfo).group()
@@ -244,7 +249,6 @@ class Reader(object):
                         db.insertEpisode(episodeInfoHaveAired)
             except Exception, DBErr:
                 self.log.takeLog('ERROR','Database Error:' + str(DBErr)) 
-                self.log.takeLog('DEBUG','problem in showDetailsWork->collecting things in season and eps:')
         return
             
 
@@ -264,7 +268,6 @@ class Reader(object):
                     self.showDetailsWork(self.config.url+idOne[1],idOne[0],firstTime)
         except Exception, DBErr:
             self.log.takeLog('ERROR','Database Error:' + str(DBErr))
-            self.log.takeLog('DEBUG','current pageCount:'+str(pageCount))
         return
         
 
