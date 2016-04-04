@@ -180,6 +180,7 @@ class Reader(object):
                         hour = '0' + hour
                     minute = minute[1:-2]
                         
+                    #新剧必然发生在20XX年，而已播放则参见下面的注释和代码.
                     dateFormat = '20' + year + '-' +  self.month[month] + '-' + day + ' ' + hour + ':' + minute +':00'
                     name = bsToBeAired.find('span',attrs = {'class' : 'epname'}).get_text()
                     name = name.replace("'","\\'")
@@ -228,7 +229,12 @@ class Reader(object):
                     if len(hour) == 1:
                         hour = '0' + hour
                     minute = minute[1:-2]
-                    dateFormat = '20' + year + '-' +  self.month[month] + '-' + day + ' ' + hour + ':' + minute +':00'
+                    #此处注意如果年份为40+则为19XX年，否则是20XX年，这是个千年虫问题
+                    if year[0] == '0' or year[0] == '1' or year[0] == '2' or year[0] == '3':
+                        dateFormat = '20' + year + '-' +  self.month[month] + '-' + day + ' ' + hour + ':' + minute +':00'
+                    else:
+                        dateFormat = '19' + year + '-' +  self.month[month] + '-' + day + ' ' + hour + ':' + minute +':00'
+                    
                     name =  bsHaveAired.find('span',attrs = {'class' : 'epname'}).get_text()
                     name = name[1:]
                     name = name.replace("'","\\'")

@@ -14,8 +14,8 @@ tools.workWithOneShowsEp(1401)
 tools.workWithOneShowsEp(1402)
 tools.workWithOneShowsEp(1403)
 
-#reader.allShowsWork()
-reader.finishAllShows(False)
+reader.allShowsWork()
+reader.finishAllShows(True)
 #reader.testerInEpisode()
 
 print("Done.")

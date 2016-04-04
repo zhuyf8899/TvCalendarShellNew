@@ -54,7 +54,7 @@ class Database(object):
 					print('updateShow:'+str(obj['s_name']))
 					return "Update"
 			else:
-				sql = '''insert into shows(s_name,status,s_sibox_image,link) values(\'%s\',\'%s\',\'%s\',\'%s\'')'''%(obj['s_name'],obj['status'],obj['s_sibox_image'],obj['link'])
+				sql = '''insert into shows(s_name,status,s_sibox_image,link) values(\'%s\',\'%s\',\'%s\',\'%s\')'''%(obj['s_name'],obj['status'],obj['s_sibox_image'],obj['link'])
 				cursor.execute(sql)
 				dbc.commit()
 				dbc.close()
