@@ -147,7 +147,7 @@ class Reader(object):
                     bsLists.append(BeautifulSoup("<html><body><div>none</div></body></html>").find('div'))
                 else:
                     for i in xrange(1,3):
-                        bsLists.append(BeautifulSoup("<html>none</html>").find('div'))
+                        bsLists.append(BeautifulSoup("<html><body><div>none</div></body></html>").find('div'))
                 for bsToBeAired in bsLists[0].findAll('div'):  #遍历查找即将播放的集,如果没有则不执行该循环
                     seEpInfo = bsToBeAired.find('span',attrs = {'class' : 'epuntil'}).get_text()    #季与集的信息
                     season = re.search('S\d*',seEpInfo).group()     #首先用正则取出季，形如S02
@@ -181,7 +181,7 @@ class Reader(object):
                     minute = minute[1:-2]
                         
                     #新剧必然发生在20XX年，而已播放则参见下面的注释和代码.
-                    dateFormat = '20' + year + '-' +  self.month[month] + '-' + day + ' ' + hour + ':' + minute +':00'
+                    dateFormat = year + '-' +  self.month[month] + '-' + str(day) + ' ' + str(hour) + ':' + str(minute) +':00'
                     name = bsToBeAired.find('span',attrs = {'class' : 'epname'}).get_text()
                     name = name.replace("'","\\'")
                     
@@ -198,6 +198,9 @@ class Reader(object):
                     #print(episodeInfoToBeAired)
                     #由于即将播出的剧必为最新一季，因此不做检查一定更新
                     db.insertEpisode(episodeInfoToBeAired)
+            except Exception, DBErr1:
+                self.log.takeLog('ERROR','Database Error in To Be Aired:' + str(DBErr1))
+            try:
                 for bsHaveAired in bsLists[1].findAll('div',attrs = {'class':'prevlist'}):           #接下来是历史播放处理，需要注意的是这里代码与前一段高度吻合，修改时稍加注意
                     seEpInfo = bsHaveAired.find('span',attrs = {'class' : 'epuntil'}).get_text()
                     season = re.search('S\d*',seEpInfo).group()
@@ -213,6 +216,15 @@ class Reader(object):
                     dateInfo = bsHaveAired.find('span',attrs = {'class' : 'epdate'}).get_text()
                     year = re.search("'.*$",dateInfo).group()
                     year = year[1:]
+                    year = string.atoi(year)
+                    #此处注意如果年份为60+则为19XX年，否则是20XX年，这是个千年虫问题
+                    if(year >= 60):
+                        year = '19' + str(year)
+                    else:
+                        if len(str(year))<2:#对应200X年
+                            year = '200' + str(year)
+                        else:
+                            year = '20' + str(year)
                     month = re.search(' \w{3} ',dateInfo).group()
                     month = month[1:-1]
                     day = re.search('^\d*',dateInfo).group()
@@ -229,11 +241,7 @@ class Reader(object):
                     if len(hour) == 1:
                         hour = '0' + hour
                     minute = minute[1:-2]
-                    #此处注意如果年份为40+则为19XX年，否则是20XX年，这是个千年虫问题
-                    if year[0] == '0' or year[0] == '1' or year[0] == '2' or year[0] == '3':
-                        dateFormat = '20' + year + '-' +  self.month[month] + '-' + day + ' ' + hour + ':' + minute +':00'
-                    else:
-                        dateFormat = '19' + year + '-' +  self.month[month] + '-' + day + ' ' + hour + ':' + minute +':00'
+                    dateFormat = year + '-' +  self.month[month] + '-' + str(day) + ' ' + str(hour) + ':' + str(minute) +':00'
                     
                     name =  bsHaveAired.find('span',attrs = {'class' : 'epname'}).get_text()
                     name = name[1:]
@@ -253,8 +261,8 @@ class Reader(object):
                         continue
                     else:
                         db.insertEpisode(episodeInfoHaveAired)
-            except Exception, DBErr:
-                self.log.takeLog('ERROR','Database Error:' + str(DBErr)) 
+            except Exception, DBErr2:
+                self.log.takeLog('ERROR','Database Error in have aired:' + str(DBErr2)) 
         return
             
 

@@ -89,8 +89,9 @@ class Tools(object):
                     hour += 12
                 minute = minute[1:-2]
                     
-                dateFormat = '20' + year + '-' +  self.month[month] + '-' + day + ' ' + str(hour) + ':' + minute +':00'
-                name = bsToBeAired.find('span',attrs = {'class' : 'epname'}).get_text()
+                dateFormat = year + '-' +  self.month[month] + '-' + str(day) + ' ' + str(hour) + ':' + str(minute) +':00'
+                name =  bsToBeAired.find('span',attrs = {'class' : 'epname'}).get_text()
+                name = name[1:]
                 name = name.replace("'","\\'")
                 
                 episodeInfoToBeAired = {
@@ -121,6 +122,15 @@ class Tools(object):
                 dateInfo = bsHaveAired.find('span',attrs = {'class' : 'epdate'}).get_text()
                 year = re.search("'.*$",dateInfo).group()
                 year = year[1:]
+                year = string.atoi(year)
+                if(year >= 60):
+                    year = '19' + str(year)
+                else:
+                    if len(str(year))<2:
+                        year = '200' + str(year)
+                    else:
+                        year = '20' + str(year)
+
                 month = re.search(' \w{3} ',dateInfo).group()
                 month = month[1:-1]
                 day = re.search('^\d*',dateInfo).group()
@@ -135,7 +145,7 @@ class Tools(object):
                     hour += 12
                 minute = minute[1:-2]
                     
-                dateFormat = '20' + year + '-' +  self.month[month] + '-' + day + ' ' + str(hour) + ':' + minute +':00'
+                dateFormat = year + '-' +  self.month[month] + '-' + str(day) + ' ' + str(hour) + ':' + str(minute) +':00'
                 name =  bsHaveAired.find('span',attrs = {'class' : 'epname'}).get_text()
                 name = name[1:]
                 name = name.replace("'","\\'")

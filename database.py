@@ -149,6 +149,7 @@ class Database(object):
 					cursor.execute(sql)
 					dbc.commit()
 					print('An episode record has been updated:'+str(checker[0]))
+					self.log.takeLog('DEBUG','An episode record has been updated:'+str(checker[0]))
 					dbc.close()
 					return "Update"
 			else:
