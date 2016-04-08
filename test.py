@@ -16,7 +16,7 @@ reader = Reader(config)
 #tools.workWithOneShowsEp(1403)
 
 reader.allShowsWork()
-reader.finishAllShows(True)
+reader.finishAllShows(False)
 #reader.testerInEpisode()
 
 print("Done.")
