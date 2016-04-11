@@ -61,7 +61,7 @@ class Tools(object):
                     imageURL = str(BeautifulSoup(str(OneBox)).a['style'])                                           #此处获取到的是图片URL的一段style的js连接，需要精加工
                     statusStringArray = BeautifulSoup(str(OneBox)).find('span',attrs={'class':'hil selby'})         #此处是要获得剧状态的span标签
                     statusString = str(statusStringArray.get_text()).split('|')                                     #此处是要获得span标签中的内容，之后把|左半拉的内容取出来，但是由于含有空格需要精加工
-                    #print(statusString)#以后装标签从这里入手
+                    #print(statusString)#标签从这里入手
                     #这个是标签
                     tag = statusString[1][1:-1]
                     #exit(1)                                
@@ -80,7 +80,7 @@ class Tools(object):
                         db.insertTag(Id,tag);
             except Exception, syntaxErr:
                 self.log.takeLog('ERROR','Syntax Tree Error:' + str(syntaxErr))
-        return
+            return
 
     def workWithOneShowsEp(self,s_id):
         #用来仅仅更新一部剧的所有季和集的方法
