@@ -9,14 +9,15 @@ from tools import Tools
 
 config = Config()
 reader = Reader(config)
-#tools = Tools(config)
+tools = Tools(config)
+tools.flush_one_page('0')
 #tools.workWithOneShowsEp(1026)
 #tools.workWithOneShowsEp(1023)
 #tools.workWithOneShowsEp(1402)
 #tools.workWithOneShowsEp(1403)
 
-reader.allShowsWork()
-reader.finishAllShows(False)
+#reader.allShowsWork()
+#reader.finishAllShows(False)
 #reader.testerInEpisode()
 
 print("Done.")

@@ -38,6 +38,50 @@ class Tools(object):
             'Dec' : '12'
         }
 
+    def flush_one_page(self,character):
+        #刷新某一页所有剧的方法，character是一个大写字母
+        try:
+            cookie = cookielib.CookieJar()
+            opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie))
+            #urlX = 'http://www.pogdesign.co.uk/cat/all-shows/0'
+            req = urllib2.Request(
+                #从config中取出Allshows的所需要的url，加上上面那个数组所对应的头字母
+                url = self.config.urlAllShows+str(character)
+            )
+            htmlData = ""
+            #获取网页原始数据
+            htmlData = opener.open(req).read()
+        except Exception, connErr:
+            self.log.takeLog('ERROR','Connection Error:' + str(connErr))
+        if htmlData:
+            try:
+                for OneBox in BeautifulSoup(htmlData).findAll('div', attrs={'class' : 'contbox prembox removed'}) : #用bs取到所有的小box，每个box是一个剧名
+                    showName = BeautifulSoup(str(OneBox)).h2.get_text()
+                    showName = showName.replace("'","\\'")
+                    imageURL = str(BeautifulSoup(str(OneBox)).a['style'])                                           #此处获取到的是图片URL的一段style的js连接，需要精加工
+                    statusStringArray = BeautifulSoup(str(OneBox)).find('span',attrs={'class':'hil selby'})         #此处是要获得剧状态的span标签
+                    statusString = str(statusStringArray.get_text()).split('|')                                     #此处是要获得span标签中的内容，之后把|左半拉的内容取出来，但是由于含有空格需要精加工
+                    #print(statusString)#以后装标签从这里入手
+                    #这个是标签
+                    tag = statusString[1][1:-1]
+                    #exit(1)                                
+                    aShow = {
+                        's_name' : showName,
+                        's_sibox_image' : imageURL[22:-2],
+                        'link' : BeautifulSoup(str(OneBox)).a['href'],
+                        'status' : statusString[0][1:-1]
+                    }
+                    #print(aShow)
+                    if aShow['s_name'] == '' or aShow['link'] == '' or aShow['status'] == '' :
+                        self.log.takeLog('WARNING','''allShowsWork function cannot collect data correctly, the vars are like below:\n s_name=%s,s_sibox_image=%s,link=%s,status=%s'''%(aShow['s_name'],aShow['s_sibox_image'],aShow['link'],aShow['status']))
+                    db = Database(self.log,self.config)
+                    Id = db.insertShowFirstTime(aShow)
+                    if len(tag) != 0:
+                        db.insertTag(Id,tag);
+            except Exception, syntaxErr:
+                self.log.takeLog('ERROR','Syntax Tree Error:' + str(syntaxErr))
+        return
+
     def workWithOneShowsEp(self,s_id):
         #用来仅仅更新一部剧的所有季和集的方法
         db = Database(self.log,self.config)

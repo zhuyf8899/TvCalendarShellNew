@@ -45,21 +45,24 @@ class Database(object):
 				if checker[2] == obj['status'] and checker[3] == obj['s_sibox_image'] and checker[4] == obj['link']:
 					dbc.close()
 					print("repeatShow:"+str(obj['s_name']))
-					return "Repeat"
+					return checker[0]
 				else:
 					sql = '''UPDATE `shows` SET  `status` =  \'%s\',`s_sibox_image` =  \'%s\',`link` =  \'%s\' WHERE  `shows`.`s_id` = %s;'''%(obj['status'],obj['s_sibox_image'],obj['link'],checker[0])
 					cursor.execute(sql)
 					dbc.commit()
 					dbc.close()
 					print('updateShow:'+str(obj['s_name']))
-					return "Update"
+					return checker[0]
 			else:
 				sql = '''insert into shows(s_name,status,s_sibox_image,link) values(\'%s\',\'%s\',\'%s\',\'%s\')'''%(obj['s_name'],obj['status'],obj['s_sibox_image'],obj['link'])
 				cursor.execute(sql)
 				dbc.commit()
+				sqlGetId = '''select s_id from shows where s_name = \'%s\' limit 1'''%(obj['s_name'])
+				cursor.execute(sqlGetId)
+				Id = cursor.fetchone()
 				dbc.close()
 				print('insertNewShow:'+str(obj['s_name']))
-				return "OK"
+				return Id[0]
 		except Exception,e:
 			print(e)
 			self.log.takeLog('ERROR','Table shows inserting error:'+str(e)+'\n the sql='+sql)
@@ -181,3 +184,41 @@ class Database(object):
 			print(e)
 			dbc.close()
 			return "Error"
+	def insertTag(self,showId,tagName):
+		# try:
+		dbc = self.connect()
+		cursor = dbc.cursor()
+		sqlCheck = '''select t_id from tag where t_name = \'%s\' limit 1'''%(tagName)
+		sqlCheckStT = ''
+		sqlInsToStT = ''
+		sqlInsToTag = ''
+		cursor.execute(sqlCheck)
+		checker = cursor.fetchone()
+		if checker:
+			sqlCheckStT = '''select * from show_to_tag where s_id = %s and t_id = %s limit 1'''%(showId,str(checker[0]))
+			cursor.execute(sqlCheckStT)
+			checkerStT = cursor.fetchone()
+			if checkerStT:
+				print('A tag relationship has been exist:tag_id-'+str(checker[0])+' to show_id-'+showId)
+				return "Repeat"
+			else:
+				sqlInsToStT = '''insert into show_to_tag(s_id,t_id) values(%s,%s)'''%(showId,str(checker[0]))
+				cursor.execute(sqlInsToStT)
+				dbc.commit()
+				dbc.close()
+				print('A tag relationship has been set:tag_id-'+str(checker[0])+' to show_id-'+showId)
+				return "OK"
+		else:
+			sqlInsToTag = '''insert into tag(t_name) values(%s)'''%(tagName)
+			cursor.execute(sqlInsToTag)
+			dbc.commit()
+			self.insertTag(showId,tagName)
+		# except Exception, e:
+		# 	self.log.takeLog('ERROR','Table tag inserting error:'+ str(e))
+		# 	self.log.takeLog('DEBUG','the sqlCheck = '+sqlCheck)
+		# 	self.log.takeLog('DEBUG','the sqlCheckStT = '+sqlCheckStT)
+		# 	self.log.takeLog('DEBUG','the sqlInsToStT = '+sqlInsToStT)
+		# 	self.log.takeLog('DEBUG','the sqlInsToTag = '+sqlInsToTag)
+		# 	print(e)
+		# 	dbc.close()
+		# 	return "Error"
