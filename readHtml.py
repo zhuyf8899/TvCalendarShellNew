@@ -66,6 +66,7 @@ class Reader(object):
                         #print(statusString)#标签从这里入手
                         #这个是标签
                         tag = statusString[1][1:-1]
+                        tag = tag.replace('&nbsp;',' ')
                         #exit(1)                                
                         aShow = {
                             's_name' : showName,
