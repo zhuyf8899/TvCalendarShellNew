@@ -7,6 +7,7 @@ class Config(object):
 		pass
 	#the url we will reach
 	url = 'http://www.pogdesign.co.uk'
+	transURL = 'http://fanyi.youdao.com/openapi.do?keyfrom=TVCalendarCN&key=461199435&type=data&doctype=json&version=1.1&q='
 	urlAllShows = 'http://www.pogdesign.co.uk/cat/all-shows/'
 
 	#the database host we looking for

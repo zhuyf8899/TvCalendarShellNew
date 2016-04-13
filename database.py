@@ -222,3 +222,65 @@ class Database(object):
             print(e)
             dbc.close()
             return "Error"
+    def getAllTagWithoutCN(self):
+        try:
+            dbc = self.connect()
+            cursor = dbc.cursor()
+            sql = 'select t_id,t_name from tag where t_name_cn is null'
+            cursor.execute(sql)
+            rs = cursor.fetchall()
+            dbc.close()
+            return rs
+        except Exception,e:
+            print(e)
+            self.log.takeLog('ERROR','Error in get tags from tag:'+ str(e)+'\n the sql='+sql)
+            dbc.close()
+            return
+    def updateTagCN(self,t_id,t_name_cn):
+        try:
+            dbc = self.connect()
+            cursor = dbc.cursor()
+            sqlUpdate = '''UPDATE `tag` SET `t_name_cn` = \'%s\' WHERE `t_id` = %s'''%(t_name_cn,t_id)
+            cursor.execute(sqlUpdate)
+            dbc.commit()
+            dbc.close()
+            print('tag translated: '+ str(t_id) + t_name_cn)
+            return "OK"
+        except Exception,e:
+            print(e)
+            #print(sqlUpdate)
+            self.log.takeLog('ERROR','Update table tag error:'+str(e)+'\n the sql='+sqlUpdate)
+            dbc.close()
+            return "Error"
+    def getAllShowsWithoutCN(self):
+        try:
+            dbc = self.connect()
+            cursor = dbc.cursor()
+            sql = 'select s_id,s_name from shows where s_name_cn is null'
+            cursor.execute(sql)
+            rs = cursor.fetchall()
+            dbc.close()
+            return rs
+        except Exception,e:
+            print(e)
+            self.log.takeLog('ERROR','Error in get tags from tag:'+ str(e)+'\n the sql='+sql)
+            dbc.close()
+            return
+    def updateShowsCN(self,s_id,s_name_cn):
+        try:
+            dbc = self.connect()
+            cursor = dbc.cursor()
+            sqlUpdate = '''UPDATE `shows` SET `s_name_cn` = \'%s\' WHERE `s_id` = %s'''%(s_name_cn,s_id)
+            cursor.execute(sqlUpdate)
+            dbc.commit()
+            dbc.close()
+            print('show name translated: '+ str(s_id) + s_name_cn)
+            return "OK"
+        except Exception,e:
+            print(e)
+            #print(sqlUpdate)
+            self.log.takeLog('ERROR','Update table shows.s_name_cn error:'+str(e)+'\n the sql='+sqlUpdate)
+            dbc.close()
+            return "Error"
+
+
