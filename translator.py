@@ -80,18 +80,18 @@ class Translator(object):
                     result = json.loads(htmlData)
                     s_name_cn = ''
                     if result:
-                        #'var'   in   locals().keys()
-                        if 'translation' in result.keys():
-                        #if result['translation'][0]:
-                            #print('dic:'+result['translation'][0])
-                            s_name_cn = result['translation'][0]
                         if 'web' in result.keys():
-                        #if result['web'][0]['value'][0]:
                             #print('web:'+result['web'][0]['value'][0])
                             s_name_cn = result['web'][0]['value'][0]
+                        elif 'translation' in result.keys():
+                            #print('dic:'+result['translation'][0])
+                            s_name_cn = result['translation'][0]
                         else:
+                            self.log.takeLog('WARNING','Translator response with empty:' + str(result))
+                            print(result)
                             continue
                         if s_name_cn:
+                            s_name_cn = s_name_cn.replace("\'","\\'")
                             db.updateShowsCN(showOne[0],s_name_cn)
                     else:
                         continue
