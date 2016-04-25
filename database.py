@@ -6,17 +6,15 @@ import MySQLdb
 
 #conn = MySQLdb.connect(host="localhost",user="root",passwd="123123",db="qiwsirtest",port=3306,charset="utf8")
 class Database(object):
-    def __init__(h,u,p,d,fileHandler):
-        self.host = h
-        self.user = u
-        self.passwd = p
-        self.db = d
-        self.log = fileHandler
     def __init__(self,fileHandler,config):
         self.host = config.dataBaseHost
         self.user = config.dataBaseUser
         self.passwd = config.dataBasePwd
         self.db = config.dataBasedb
+        self.hostRes = config.dataBaseHostRes
+        self.userRes = config.dataBaseUserRes
+        self.passwdRes = config.dataBasePwdRes
+        self.dbRes = config.dataBasedbRes
         self.log = fileHandler
     # def __init__(self,config):
     #   self.host = config.dataBaseHost
@@ -24,9 +22,12 @@ class Database(object):
     #   self.passwd = config.dataBasePwd
     #   self.db = config.dataBasedb
 
-    def connect(self):
+    def connect(self,database=''):
         try:
-            conn = MySQLdb.connect(host=self.host,user=self.user,passwd=self.passwd,db=self.db,charset='utf8')
+            if database == 'resource':
+                conn = MySQLdb.connect(host=self.hostRes,user=self.userRes,passwd=self.passwdRes,db=self.dbRes,charset='utf8')
+            else:
+                conn = MySQLdb.connect(host=self.host,user=self.user,passwd=self.passwd,db=self.db,charset='utf8')
         except Exception, e:
             print(e)
             self.log.takeLog('ERROR','Database Connection Error:'+str(e))
@@ -35,26 +36,44 @@ class Database(object):
         return conn
     def insertShowFirstTime(self,obj):#obj中必须有s_name,link,status和s_sibox_image
         try:
+            #首先从资源库中找id
+            dbrc = self.connect('resource')
+            dbrcHandler = dbrc.cursor()
+            sqlGetResource = 'select zmz_resourceid from zmz_resource where resource_en_name = \'%s\' limit 1'%(obj['s_name'])
+            dbrcHandler.execute(sqlGetResource)
+            resourceResult = dbrcHandler.fetchone()
+            #print(resourceResult)
+            dbrc.close()
+            if resourceResult != None:
+                resourceId = resourceResult[0]
+            else:
+                resourceId = ''
+        except Exception,e:
+            print(e)
+            self.log.takeLog('ERROR','connecting to resource database error:'+str(e)+'\n the sql='+sqlGetResource)
+            dbrc.close()
+            return "Error"
+        try:
             dbc = self.connect()
             cursor = dbc.cursor()
-            sql = '''select s_id,s_name,status,s_sibox_image,link from shows where s_name = \'%s\''''%(obj['s_name'])
+            sql = 'select s_id,s_name,status,s_sibox_image,r_id from shows where s_name = \'%s\''%(obj['s_name'])
             cursor.execute(sql)
             checker = cursor.fetchone()
             #print(checker)
             if checker:
-                if checker[2] == obj['status'] and checker[3] == obj['s_sibox_image'] and checker[4] == obj['link']:
+                if checker[2] == obj['status'] and checker[3] == obj['s_sibox_image'] and checker[4] == resourceId:
                     dbc.close()
                     print("repeatShow:"+str(obj['s_name']))
                     return checker[0]
                 else:
-                    sql = '''UPDATE `shows` SET  `status` =  \'%s\',`s_sibox_image` =  \'%s\',`link` =  \'%s\' WHERE  `shows`.`s_id` = %s;'''%(obj['status'],obj['s_sibox_image'],obj['link'],checker[0])
+                    sql = '''UPDATE `shows` SET  `status` =  \'%s\',`s_sibox_image` =  \'%s\',`link` =  \'%s\',`r_id` = \'%s\' WHERE  `shows`.`s_id` = %s;'''%(obj['status'],obj['s_sibox_image'],obj['link'],resourceId,checker[0])
                     cursor.execute(sql)
                     dbc.commit()
                     dbc.close()
                     print('updateShow:'+str(obj['s_name']))
                     return checker[0]
             else:
-                sql = '''insert into shows(s_name,status,s_sibox_image,link) values(\'%s\',\'%s\',\'%s\',\'%s\')'''%(obj['s_name'],obj['status'],obj['s_sibox_image'],obj['link'])
+                sql = '''insert into shows(s_name,status,s_sibox_image,link) values(\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')'''%(obj['s_name'],obj['status'],obj['s_sibox_image'],obj['link'],resourceId)
                 cursor.execute(sql)
                 dbc.commit()
                 sqlGetId = '''select s_id from shows where s_name = \'%s\' limit 1'''%(obj['s_name'])
