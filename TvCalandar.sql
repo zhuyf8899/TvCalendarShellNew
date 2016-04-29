@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost
--- Generation Time: Apr 27, 2016 at 03:57 PM
+-- Generation Time: Apr 29, 2016 at 03:04 PM
 -- Server version: 5.5.47-0ubuntu0.14.04.1
 -- PHP Version: 5.5.9-1ubuntu4.14
 
@@ -45,7 +45,7 @@ CREATE TABLE `budget` (
 --
 -- Table structure for table `download_count`
 --
--- Creation: Apr 27, 2016 at 06:49 AM
+-- Creation: Apr 29, 2016 at 06:27 AM
 --
 
 CREATE TABLE `download_count` (
@@ -55,6 +55,8 @@ CREATE TABLE `download_count` (
 
 --
 -- RELATIONS FOR TABLE `download_count`:
+--   `e_id`
+--       `episode` -> `e_id`
 --
 
 -- --------------------------------------------------------
@@ -342,12 +344,12 @@ ALTER TABLE `user_to_tag`
 -- AUTO_INCREMENT for table `budget`
 --
 ALTER TABLE `budget`
-  MODIFY `b_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `b_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 --
 -- AUTO_INCREMENT for table `episode`
 --
 ALTER TABLE `episode`
-  MODIFY `e_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '主键id', AUTO_INCREMENT=83284;
+  MODIFY `e_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '主键id', AUTO_INCREMENT=1;
 --
 -- AUTO_INCREMENT for table `season`
 --
@@ -357,20 +359,26 @@ ALTER TABLE `season`
 -- AUTO_INCREMENT for table `shows`
 --
 ALTER TABLE `shows`
-  MODIFY `s_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '剧的id', AUTO_INCREMENT=1413;
+  MODIFY `s_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '剧的id', AUTO_INCREMENT=1;
 --
 -- AUTO_INCREMENT for table `tag`
 --
 ALTER TABLE `tag`
-  MODIFY `t_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '标签主键', AUTO_INCREMENT=12;
+  MODIFY `t_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '标签主键', AUTO_INCREMENT=1;
 --
 -- AUTO_INCREMENT for table `user`
 --
 ALTER TABLE `user`
-  MODIFY `u_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '用户id', AUTO_INCREMENT=58;
+  MODIFY `u_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '用户id', AUTO_INCREMENT=1;
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `download_count`
+--
+ALTER TABLE `download_count`
+  ADD CONSTRAINT `FK_down_to_episode` FOREIGN KEY (`e_id`) REFERENCES `episode` (`e_id`);
 
 --
 -- Constraints for table `episode`
