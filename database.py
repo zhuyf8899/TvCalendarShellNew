@@ -73,7 +73,7 @@ class Database(object):
                     print('updateShow:'+str(obj['s_name']))
                     return checker[0]
             else:
-                sql = '''insert into shows(s_name,status,s_sibox_image,link) values(\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')'''%(obj['s_name'],obj['status'],obj['s_sibox_image'],obj['link'],resourceId)
+                sql = '''insert into shows(s_name,status,s_sibox_image,link,r_id) values(\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')'''%(obj['s_name'],obj['status'],obj['s_sibox_image'],obj['link'],resourceId)
                 cursor.execute(sql)
                 dbc.commit()
                 sqlGetId = '''select s_id from shows where s_name = \'%s\' limit 1'''%(obj['s_name'])
