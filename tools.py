@@ -38,6 +38,8 @@ class Tools(object):
             'Dec' : '12'
         }
 
+
+
     def flush_one_page(self,character):
         #刷新某一页所有剧的方法，character是一个大写字母
         try:
@@ -54,36 +56,93 @@ class Tools(object):
         except Exception, connErr:
             self.log.takeLog('ERROR','Connection Error:' + str(connErr))
         if htmlData:
-            try:
-                for OneBox in BeautifulSoup(htmlData).findAll('div', attrs={'class' : 'contbox prembox removed'}) : #用bs取到所有的小box，每个box是一个剧名
-                    showName = BeautifulSoup(str(OneBox)).h2.get_text()
-                    showName = showName.replace("'","\\'")
-                    imageURL = str(BeautifulSoup(str(OneBox)).a['style'])                                           #此处获取到的是图片URL的一段style的js连接，需要精加工
-                    statusStringArray = BeautifulSoup(str(OneBox)).find('span',attrs={'class':'hil selby'})         #此处是要获得剧状态的span标签
-                    statusString = str(statusStringArray.get_text()).split('|')                                     #此处是要获得span标签中的内容，之后把|左半拉的内容取出来，但是由于含有空格需要精加工
-                    #print(statusString)#标签从这里入手
-                    #这个是标签
-                    tag = statusString[1][1:-1]
-                    tag = tag.replace('Â ',' ')#过滤空格
-                    tag = tag.replace("\'","\\'")
-                    #exit(1)                                
-                    aShow = {
-                        's_name' : showName,
-                        's_sibox_image' : imageURL[22:-2],
-                        'link' : BeautifulSoup(str(OneBox)).a['href'],
-                        'status' : statusString[0][1:-1]
-                    }
-                    #print(aShow)
-                    if aShow['s_name'] == '' or aShow['link'] == '' or aShow['status'] == '' :
-                        self.log.takeLog('WARNING','''allShowsWork function cannot collect data correctly, the vars are like below:\n s_name=%s,s_sibox_image=%s,link=%s,status=%s'''%(aShow['s_name'],aShow['s_sibox_image'],aShow['link'],aShow['status']))
-                    db = Database(self.log,self.config)
-                    Id = db.insertShowFirstTime(aShow)
-                    if len(tag) != 0:
-                        db.insertTag(Id,tag);
-            except Exception, syntaxErr:
-                self.log.takeLog('ERROR','Syntax Tree Error:' + str(syntaxErr))
+            #try:
+            for OneBox in BeautifulSoup(htmlData).findAll('div', attrs={'class' : 'contbox prembox removed'}) : #用bs取到所有的小box，每个box是一个剧名
+                showName = BeautifulSoup(str(OneBox)).h2.get_text()
+                showName = showName.replace("'","\\'")
+                imageURL = str(BeautifulSoup(str(OneBox)).a['style'])                                           #此处获取到的是图片URL的一段style的js连接，需要精加工
+                statusStringArray = BeautifulSoup(str(OneBox)).find('span',attrs={'class':'hil selby'})         #此处是要获得剧状态的span标签
+                
+                #edit on 20160520由于原网页出现格式变化，改从注释中提取播放状态，一旦注释消失记得修改此处注释内容
+                statusString = str(statusStringArray).split('|')                                     #此处是要获得span标签中的内容，之后把|左半拉的内容取出来，但是由于含有空格需要精加工
+                #print(statusStringArray.get_text())#标签从这里入手
+                #print (str(statusStringArray))
+                #statusString = [statusStringArray.get_text(),'0']
+                #这个是标签
+                tag = statusString[1][4:-8]
+                tag = tag.replace('Â ',' ')#过滤空格
+                tag = tag.replace("\'","\\'")
+                #print(tag)                             
+                
+                aShow = {
+                    's_name' : showName,
+                    's_sibox_image' : imageURL[22:-2],
+                    'link' : BeautifulSoup(str(OneBox)).a['href'],
+                    'status' : statusString[0][29:-1]
+                }
+                #print(aShow)
+                #exit(1) 
+                if aShow['s_name'] == '' or aShow['link'] == '' or aShow['status'] == '' :
+                #if aShow['s_name'] == '' or aShow['link'] == '' :
+                    self.log.takeLog('WARNING','''allShowsWork function cannot collect data correctly, the vars are like below:\n s_name=%s,s_sibox_image=%s,link=%s,status=%s'''%(aShow['s_name'],aShow['s_sibox_image'],aShow['link'],aShow['status']))
+                db = Database(self.log,self.config)
+                Id = db.insertShowFirstTime(aShow)
+                if len(tag) != 0:
+                    db.insertTag(Id,tag);
+            #except Exception, syntaxErr:
+            #    self.log.takeLog('ERROR','Syntax Tree Error:' + str(syntaxErr))
+            #    raise syntaxErr
             return
 
+    def updateShowDetail(self,s_id):
+        #用来仅仅更新一部剧的所有季和集的方法
+        db = Database(self.log,self.config)
+        urlTarget = self.config.url+db.getOneLinkBySid(s_id)
+        cookie = cookielib.CookieJar()
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie))
+        req = urllib2.Request(
+            url = urlTarget
+        )
+        htmlData = ""
+        htmlData = opener.open(req).read()
+        if htmlData:
+            #reString = '</span>\s.*</div>'  #要匹配的正则表达式
+            bsContent = BeautifulSoup(htmlData)
+            pinfo = bsContent.find('p',attrs={'class':'sumtext'}).get_text()  #要取到的剧的介绍
+            pinfo = pinfo.replace("'", "\\'")
+            #print(str(pinfo))
+            DivLarge = bsContent.find('aside',attrs={'class':'quikinfo'})
+            DivSmall = DivLarge.findAll('li')
+            #处理每周日期
+            #update_time = re.search(reString,str(DivSmall[1])).group()
+            #update_time = update_time[8:-6]
+            update_time = DivSmall[0].a.get_text()
+            #print(update_time)
+            #处理每集长度
+            #length = re.search(reString,str(DivSmall[2])).group()
+            #length = length[8:-6]
+            length = DivSmall[1].get_text()
+            length = length[17:]
+            #print(length)
+            #查找地区、电视台
+            #area = re.search(reString,str(DivSmall[3])).group()
+            #area = area[8:-6]
+            area = DivSmall[3].get_text()
+            area = area[10:]
+            #channel = re.search(reString,str(DivSmall[2])).group()
+            #channel = channel[8:-6]
+            channel = DivSmall[2].get_text()
+            channel = channel[10:]
+        
+            DetailOfShow = {
+                's_id' : s_id,
+                's_description' : pinfo,
+                'update_time' : update_time,
+                'length' : length,
+                'area' : area,
+                'channel' : channel
+            }
+            print DetailOfShow
     def workWithOneShowsEp(self,s_id):
         #用来仅仅更新一部剧的所有季和集的方法
         db = Database(self.log,self.config)
@@ -97,61 +156,120 @@ class Tools(object):
         htmlData = opener.open(req).read()
         if htmlData:
             bsContent = BeautifulSoup(htmlData)
-            bsLists = bsContent.findAll('div',attrs = {'class':'box930 lists'})
-            if len(bsLists) >= 2:
-                    pass
-            elif len(bsLists) == 1:
-                bsLists.append(BeautifulSoup("<html><body><div>none</div></body></html>").find('div'))
-            else:
-                for i in xrange(1,3):
-                    bsLists.append(BeautifulSoup("<html><body><div>none</div></body></html>").find('div'))
-            for bsToBeAired in bsLists[0].findAll('div'):  #遍历查找即将播放的集,如果没有则不执行该循环
-                seEpInfo = bsToBeAired.find('span',attrs = {'class' : 'epuntil'}).get_text()    #季与集的信息
-                season = re.search('S\d*',seEpInfo).group()     #首先用正则取出季，形如S02
-                if season[1] == '0':                            #之后将S和多余的0都去掉
-                    season = season[2:]
-                else:
-                    season = season[1:]
-                episode = re.search('E\d*',seEpInfo).group()    #同理对付集数
-                if episode[1] == '0':
-                    episode = episode[2:]
-                else:
-                    episode = episode[1:]
-                dateInfo = bsToBeAired.find('span',attrs = {'class' : 'epdate'}).get_text()     #接下来处理日期，比较折腾
-                year = re.search("'.*$",dateInfo).group()                                       #首先摘出形如‘16的表示年份的字串，并取出前面的’
-                year = year[1:]
-                month = re.search(' \w{3} ',dateInfo).group()                                   #接着取出三个代表月份的字母，形如Feb，并删除前后空格
-                month = month[1:-1]
-                day = re.search('^\d*',dateInfo).group()                                        #再之后取出日期，如果日期是个位数前面补零以保证yyyy-mm-dd的格式
-                if len(day) < 2:
-                    day = '0'+day
-                time = bsToBeAired.find('span',attrs = {'class' : 'eptime'}).get_text()         #取出日期后开始调整时间，利用类似的方法获取小时和分钟
-                hour = re.search('\d{1,2}:',time).group()
-                hour = hour[:-1]
-                hour = string.atoi(hour)
-                minute = re.search(':\d{2}[a|p]m',time).group() 
-                #注意调整am和pm的时间差，另外需要注意的是这里的时间都是标准UTC时间，天朝使用需要+8
-                if (minute[-2] == 'p') and (hour != 12):
-                    hour += 12
-                minute = minute[1:-2]
-                    
-                dateFormat = year + '-' +  self.month[month] + '-' + str(day) + ' ' + str(hour) + ':' + str(minute) +':00'
-                name =  bsToBeAired.find('span',attrs = {'class' : 'epname'}).get_text()
-                name = name[1:]
-                name = name.replace("'","\\'")
-                
-                episodeInfoToBeAired = {
-                    's_id' : s_id,
-                    'se_id' : season,
-                    'e_num' : episode,
-                    'e_name' : name,
-                    'e_status' : u"即将播出",
-                    'e_description' : '',
-                    'e_time' : dateFormat
+            #bsLists = bsContent.findAll('div',attrs = {'class':'box930 lists'})
+            bsLists = bsContent.findAll('li',attrs = {'class':'parent'})
+            print ('the len of biLists is '+str(len(bsLists)))
+            for oneSeason in bsLists:
+                #print oneSeason.strong.get_text()
+                se_id = oneSeason.strong.get_text()
+                se_id = re.search('Season\s\d{1,2}',se_id).group()
+                se_id = se_id[7:]
 
-                }
-                print(episodeInfoToBeAired)
-                db.insertEpisode(episodeInfoToBeAired)
+                for oneEpisode in oneSeason.findAll('li',attrs = {'class':'ep info  RAWR'}):
+                    #集数
+                    e_num = oneEpisode.find('span',attrs = {'class':'pnumber'}).get_text()
+                    if e_num[0] == '0':
+                        e_num = e_num[1:]
+                    #集名
+                    e_name = oneEpisode.find('a',attrs = {'itemprop':'url'}).get_text()
+                    e_name = e_name.replace("'","\'")
+                    #播放时间
+
+                    time_temp = oneEpisode.find('span',attrs = {'class':'datepub'})
+                    e_time = time_temp['content']
+                    time_temp = time_temp.get_text()
+                    time = time_temp[-7:]
+
+                    hour = re.search('\d{1,2}:',time).group()
+                    hour = hour[:-1]
+                    hour = string.atoi(hour)
+                    minute = re.search(':\d{2}[a|p]m',time).group() 
+                    #注意调整am和pm的时间差，另外需要注意的是这里的时间都是标准UTC时间，天朝使用需要+8
+                    if (minute[-2] == 'p') and (hour != 12):
+                        hour += 12
+                    minute = minute[1:-2]
+
+                    if len(str(hour)) < 2:
+                        hour = '0' + str(hour)
+                    
+                    e_time += ' ' + str(hour) + ':' + minute + ':00'
+
+                    status_temp = oneEpisode.find('span',attrs = {'class':'paired'}).get_text()
+                    if status_temp == 'AIRED':
+                        e_status = u'已播放'
+                    else:
+                        e_status = u'即将播出'
+
+                    episodeInfoToBeAired = {
+                        's_id' : s_id,
+                        'se_id' : se_id,
+                        'e_num' : e_num,
+                        'e_name' : e_name,
+                        'e_status' : e_status,
+                        'e_description' : '',
+                        'e_time' : e_time
+
+                    }
+                    print episodeInfoToBeAired
+                flag = True
+                if flag == False:
+                    break
+            exit(1)    
+            #if len(bsLists) >= 2:
+            #        pass
+            #elif len(bsLists) == 1:
+            #    bsLists.append(BeautifulSoup("<html><body><div>none</div></body></html>").find('div'))
+            #else:
+            #    for i in xrange(1,3):
+            #        bsLists.append(BeautifulSoup("<html><body><div>none</div></body></html>").find('div'))
+            #for bsToBeAired in bsLists[0].findAll('div'):  #遍历查找即将播放的集,如果没有则不执行该循环
+            # for bsToBeAired in bsLists[0].findAll('li'):  #遍历查找即将播放的集,如果没有则不执行该循环
+            #     seEpInfo = bsToBeAired.find('span',attrs = {'class' : 'epuntil'}).get_text()    #季与集的信息
+            #     season = re.search('S\d*',seEpInfo).group()     #首先用正则取出季，形如S02
+            #     if season[1] == '0':                            #之后将S和多余的0都去掉
+            #         season = season[2:]
+            #     else:
+            #         season = season[1:]
+            #     episode = re.search('E\d*',seEpInfo).group()    #同理对付集数
+            #     if episode[1] == '0':
+            #         episode = episode[2:]
+            #     else:
+            #         episode = episode[1:]
+            #     dateInfo = bsToBeAired.find('span',attrs = {'class' : 'epdate'}).get_text()     #接下来处理日期，比较折腾
+            #     year = re.search("'.*$",dateInfo).group()                                       #首先摘出形如‘16的表示年份的字串，并取出前面的’
+            #     year = year[1:]
+            #     month = re.search(' \w{3} ',dateInfo).group()                                   #接着取出三个代表月份的字母，形如Feb，并删除前后空格
+            #     month = month[1:-1]
+            #     day = re.search('^\d*',dateInfo).group()                                        #再之后取出日期，如果日期是个位数前面补零以保证yyyy-mm-dd的格式
+            #     if len(day) < 2:
+            #         day = '0'+day
+            #     time = bsToBeAired.find('span',attrs = {'class' : 'eptime'}).get_text()         #取出日期后开始调整时间，利用类似的方法获取小时和分钟
+            #     hour = re.search('\d{1,2}:',time).group()
+            #     hour = hour[:-1]
+            #     hour = string.atoi(hour)
+            #     minute = re.search(':\d{2}[a|p]m',time).group() 
+            #     #注意调整am和pm的时间差，另外需要注意的是这里的时间都是标准UTC时间，天朝使用需要+8
+            #     if (minute[-2] == 'p') and (hour != 12):
+            #         hour += 12
+            #     minute = minute[1:-2]
+                    
+            #     dateFormat = year + '-' +  self.month[month] + '-' + str(day) + ' ' + str(hour) + ':' + str(minute) +':00'
+            #     name =  bsToBeAired.find('span',attrs = {'class' : 'epname'}).get_text()
+            #     name = name[1:]
+            #     name = name.replace("'","\\'")
+                
+            #     episodeInfoToBeAired = {
+            #         's_id' : s_id,
+            #         'se_id' : season,
+            #         'e_num' : episode,
+            #         'e_name' : name,
+            #         'e_status' : u"即将播出",
+            #         'e_description' : '',
+            #         'e_time' : dateFormat
+
+            #     }
+            #     print(episodeInfoToBeAired)
+                #db.insertEpisode(episodeInfoToBeAired)
 
             for bsHaveAired in bsLists[1].findAll('div',attrs = {'class':'prevlist'}):
                 seEpInfo = bsHaveAired.find('span',attrs = {'class' : 'epuntil'}).get_text()
@@ -206,5 +324,5 @@ class Tools(object):
                     'e_time' : dateFormat
                 }
                 print(episodeInfoHaveAired)
-                db.insertEpisode(episodeInfoHaveAired)
+                #db.insertEpisode(episodeInfoHaveAired)
 

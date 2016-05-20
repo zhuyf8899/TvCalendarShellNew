@@ -62,18 +62,26 @@ class Database(object):
             #print(checker)
             if checker:
                 if checker[2] == obj['status'] and checker[3] == obj['s_sibox_image'] and checker[4] == resourceId:
+                #if checker[3] == obj['s_sibox_image'] and checker[4] == resourceId:
                     dbc.close()
                     print("repeatShow:"+str(obj['s_name']))
                     return checker[0]
                 else:
-                    sql = '''UPDATE `shows` SET  `status` =  \'%s\',`s_sibox_image` =  \'%s\',`link` =  \'%s\',`r_id` = \'%s\' WHERE  `shows`.`s_id` = %s;'''%(obj['status'],obj['s_sibox_image'],obj['link'],resourceId,checker[0])
+                    if resourceId == '':
+                        sql = '''UPDATE `shows` SET  `status` =  \'%s\',`s_sibox_image` =  \'%s\',`link` =  \'%s\' WHERE  `shows`.`s_id` = %s;'''%(obj['status'],obj['s_sibox_image'],obj['link'],checker[0])
+                    else:
+                        sql = '''UPDATE `shows` SET  `status` =  \'%s\',`s_sibox_image` =  \'%s\',`link` =  \'%s\',`r_id` = \'%s\' WHERE  `shows`.`s_id` = %s;'''%(obj['status'],obj['s_sibox_image'],obj['link'],resourceId,checker[0])
+                    #sql = '''UPDATE `shows` SET `s_sibox_image` =  \'%s\',`link` =  \'%s\',`r_id` = \'%s\' WHERE  `shows`.`s_id` = %s;'''%(obj['s_sibox_image'],obj['link'],resourceId,checker[0])
                     cursor.execute(sql)
                     dbc.commit()
                     dbc.close()
                     print('updateShow:'+str(obj['s_name']))
                     return checker[0]
             else:
-                sql = '''insert into shows(s_name,status,s_sibox_image,link,r_id) values(\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')'''%(obj['s_name'],obj['status'],obj['s_sibox_image'],obj['link'],resourceId)
+                if resourceId == '':
+                    sql = '''insert into shows(s_name,s_sibox_image,link,status) values(\'%s\',\'%s\',\'%s\',\'%s\')'''%(obj['s_name'],obj['s_sibox_image'],obj['link'],obj['status'])
+                else:
+                    sql = '''insert into shows(s_name,s_sibox_image,link,r_id,status) values(\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')'''%(obj['s_name'],obj['s_sibox_image'],obj['link'],resourceId,obj['status'])
                 cursor.execute(sql)
                 dbc.commit()
                 sqlGetId = '''select s_id from shows where s_name = \'%s\' limit 1'''%(obj['s_name'])

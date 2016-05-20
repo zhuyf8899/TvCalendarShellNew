@@ -14,10 +14,11 @@ translator = Translator(config)
 tools = Tools(config)
 
 #更新某一字母开头的页面全部剧简略信息的方法，对应于reader.allShowsWork()的单步
-#tools.flush_one_page('T')
+#tools.flush_one_page('B')
 
 #更新某部剧，其中参数为剧在数据库中的s_id,对应于#reader.finishAllShows(True)的单步
-#tools.workWithOneShowsEp(1026)
+tools.workWithOneShowsEp(1)
+#tools.updateShowDetail(1)
 
 #reader.allShowsWork()
 #reader.finishAllShows(False)

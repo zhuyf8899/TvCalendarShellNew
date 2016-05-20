@@ -23,7 +23,8 @@ class Log(object):
 		 		fileHandler = open(fileWholePath,'a')
 		except Exception, e:
 			print('FATAL ERROR: Opening log file error - ' + str(e))
-			fileHandler.close()
+			if fileHandler != None:
+				fileHandler.close()
 			exit(-1)
 		try:
 			logReport = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) + '[' + str(level) + ']:' + str(report)
