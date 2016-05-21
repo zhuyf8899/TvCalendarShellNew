@@ -17,7 +17,7 @@ tools = Tools(config)
 #tools.flush_one_page('B')
 
 #更新某部剧，其中参数为剧在数据库中的s_id,对应于#reader.finishAllShows(True)的单步
-tools.workWithOneShowsEp(1)
+tools.workWithOneShowsEp(1414)
 #tools.updateShowDetail(1)
 
 #reader.allShowsWork()

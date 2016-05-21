@@ -172,7 +172,7 @@ class Tools(object):
                         e_num = e_num[1:]
                     #集名
                     e_name = oneEpisode.find('a',attrs = {'itemprop':'url'}).get_text()
-                    e_name = e_name.replace("'","\'")
+                    e_name = e_name.replace("\'","\\'")
                     #播放时间
 
                     time_temp = oneEpisode.find('span',attrs = {'class':'datepub'})
