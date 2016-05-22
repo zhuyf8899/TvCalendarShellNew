@@ -9,6 +9,7 @@ import string
 import json
 import sys
 import math
+import MySQLdb
 from bs4 import BeautifulSoup
 from database import Database
 from log import Log
@@ -172,7 +173,7 @@ class Tools(object):
                         e_num = e_num[1:]
                     #集名
                     e_name = oneEpisode.find('a',attrs = {'itemprop':'url'}).get_text()
-                    e_name = e_name.replace("\'","\\'")
+                    e_name = MySQLdb.escape_string(e_name)
                     #播放时间
 
                     time_temp = oneEpisode.find('span',attrs = {'class':'datepub'})
@@ -211,7 +212,7 @@ class Tools(object):
 
                     }
                     print episodeInfoToBeAired
-                flag = True
+                flag = False
                 if flag == False:
                     break
             exit(1)    
@@ -270,59 +271,20 @@ class Tools(object):
             #     }
             #     print(episodeInfoToBeAired)
                 #db.insertEpisode(episodeInfoToBeAired)
-
-            for bsHaveAired in bsLists[1].findAll('div',attrs = {'class':'prevlist'}):
-                seEpInfo = bsHaveAired.find('span',attrs = {'class' : 'epuntil'}).get_text()
-                season = re.search('S\d*',seEpInfo).group()
-                if season[1] == '0':
-                    season = season[2:]
-                else:
-                    season = season[1:]
-                episode = re.search('E\d*',seEpInfo).group()
-                if episode[1] == '0':
-                    episode = episode[2:]
-                else:
-                    episode = episode[1:]
-                dateInfo = bsHaveAired.find('span',attrs = {'class' : 'epdate'}).get_text()
-                year = re.search("'.*$",dateInfo).group()
-                year = year[1:]
-                year = string.atoi(year)
-                if(year >= 60):
-                    year = '19' + str(year)
-                else:
-                    if len(str(year))<2:
-                        year = '200' + str(year)
-                    else:
-                        year = '20' + str(year)
-
-                month = re.search(' \w{3} ',dateInfo).group()
-                month = month[1:-1]
-                day = re.search('^\d*',dateInfo).group()
-                if len(day) < 2:
-                    day = '0'+day
-                time = bsHaveAired.find('span',attrs = {'class' : 'eptime'}).get_text()
-                hour = re.search('\d{1,2}:',time).group()
-                hour = hour[:-1]
-                hour = string.atoi(hour)
-                minute = re.search(':\d{2}[a|p]m',time).group()
-                if (minute[-2] == 'p') and (hour != 12):
-                    hour += 12
-                minute = minute[1:-2]
-                    
-                dateFormat = year + '-' +  self.month[month] + '-' + str(day) + ' ' + str(hour) + ':' + str(minute) +':00'
-                name =  bsHaveAired.find('span',attrs = {'class' : 'epname'}).get_text()
-                name = name[1:]
-                name = name.replace("'","\\'")
-                
-                episodeInfoHaveAired = {
-                    's_id' : s_id,
-                    'se_id' : season,
-                    'e_num' : episode,
-                    'e_name' : name,
-                    'e_status' : u"已播出",
-                    'e_description' : '',
-                    'e_time' : dateFormat
-                }
-                print(episodeInfoHaveAired)
                 #db.insertEpisode(episodeInfoHaveAired)
 
+    def test_connection(self):
+        urlTarget = 'http://www.pogdesign.co.uk/cat/'
+        cookie = cookielib.CookieJar()
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie))
+        req = urllib2.Request(
+            url = urlTarget
+        )
+        htmlData = ""
+        htmlData = opener.open(req).read()
+        if htmlData:
+            print "OK"
+            print htmlData
+        else:
+            print "Connection Error"
+        return

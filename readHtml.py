@@ -9,6 +9,7 @@ import string
 import json
 import sys
 import math
+import MySQLdb
 from bs4 import BeautifulSoup
 from database import Database
 from log import Log
@@ -59,7 +60,7 @@ class Reader(object):
                 try:
                     for OneBox in BeautifulSoup(htmlData).findAll('div', attrs={'class' : 'contbox prembox removed'}) : #用bs取到所有的小box，每个box是一个剧名
                         showName = BeautifulSoup(str(OneBox)).h2.get_text()
-                        showName = showName.replace("'","\\'")
+                        showName = MySQLdb.escape_string(showName)
                         imageURL = str(BeautifulSoup(str(OneBox)).a['style'])                                           #此处获取到的是图片URL的一段style的js连接，需要精加工
                         statusStringArray = BeautifulSoup(str(OneBox)).find('span',attrs={'class':'hil selby'})         #此处是要获得剧状态的span标签
                         #edit on 20160520由于原网页出现格式变化，改从注释中提取播放状态，一旦注释消失记得修改此处注释内容
@@ -70,7 +71,8 @@ class Reader(object):
                         #这个是标签
                         tag = statusString[1][4:-8]
                         tag = tag.replace('Â ',' ')#过滤空格
-                        tag = tag.replace("\'","\\'")
+                        #tag = tag.replace("\'","\\'")
+                        tag = MySQLdb.escape_string(tag)
                         #print(tag)                             
                         
                         aShow = {
@@ -174,7 +176,8 @@ class Reader(object):
                             e_num = e_num[1:]
                         #集名
                         e_name = oneEpisode.find('a',attrs = {'itemprop':'url'}).get_text()
-                        e_name = e_name.replace("\'","\\'")
+                        #e_name = e_name.replace("'","\\'")
+                        e_name = MySQLdb.escape_string(e_name)
                         #播放时间
 
                         time_temp = oneEpisode.find('span',attrs = {'class':'datepub'})

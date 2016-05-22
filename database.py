@@ -190,7 +190,7 @@ class Database(object):
                 print('A record has been inserted:'+str(aRecord['s_id'])+':S'+str(aRecord['se_id'])+'E'+str(aRecord['e_num']))
                 return "OK"
         except Exception, e:
-            self.log.takeLog('ERROR','Table episode inserting error:'+ str(e)+' \nthe sql = '+sql)
+            self.log.takeLog('ERROR','Table episode inserting error:'+ str(e)+' \nthe sql = '+sql+'\nthe e_name is %s'%(aRecord['e_name']))
             dbc.close()
             return "Error"
     def getOneLinkBySid(self,s_id):

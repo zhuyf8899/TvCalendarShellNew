@@ -22,7 +22,7 @@ class Translator(object):
             tags = db.getAllTagWithoutCN()
             if tags:
                 for tagOne in tags:
-                    postfix = showOne[1].replace(' ','+')
+                    postfix = tagOne[1].replace(' ','+')
                     url = self.config.transURL+postfix
                     cookie = cookielib.CookieJar()
                     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie))
