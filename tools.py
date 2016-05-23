@@ -9,13 +9,13 @@ import string
 import json
 import sys
 import math
-import MySQLdb
+#import MySQLdb
 from bs4 import BeautifulSoup
 from database import Database
 from log import Log
 
 class Tools(object):
-    """docstring for Tools"""
+    """A class which is very simililar to ReadHtml class. The diffierence is it use step-forward method to handle data mannually"""
     def __init__(self, config):
         reload(sys)
         sys.setdefaultencoding('utf-8')
@@ -24,6 +24,7 @@ class Tools(object):
         #剧名的字母顺序表
         self.AllShowsList = ['0','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
         #月份换算表
+        #已废弃，处于兼容目的保留
         self.month = {
             'Jan' : '01',
             'Feb' : '02',
@@ -66,9 +67,8 @@ class Tools(object):
                 
                 #edit on 20160520由于原网页出现格式变化，改从注释中提取播放状态，一旦注释消失记得修改此处注释内容
                 statusString = str(statusStringArray).split('|')                                     #此处是要获得span标签中的内容，之后把|左半拉的内容取出来，但是由于含有空格需要精加工
-                #print(statusStringArray.get_text())#标签从这里入手
+                #标签从这里入手
                 #print (str(statusStringArray))
-                #statusString = [statusStringArray.get_text(),'0']
                 #这个是标签
                 tag = statusString[1][4:-8]
                 tag = tag.replace('Â ',' ')#过滤空格
@@ -82,7 +82,6 @@ class Tools(object):
                     'status' : statusString[0][29:-1]
                 }
                 #print(aShow)
-                #exit(1) 
                 if aShow['s_name'] == '' or aShow['link'] == '' or aShow['status'] == '' :
                 #if aShow['s_name'] == '' or aShow['link'] == '' :
                     self.log.takeLog('WARNING','''allShowsWork function cannot collect data correctly, the vars are like below:\n s_name=%s,s_sibox_image=%s,link=%s,status=%s'''%(aShow['s_name'],aShow['s_sibox_image'],aShow['link'],aShow['status']))
@@ -107,31 +106,19 @@ class Tools(object):
         htmlData = ""
         htmlData = opener.open(req).read()
         if htmlData:
-            #reString = '</span>\s.*</div>'  #要匹配的正则表达式
             bsContent = BeautifulSoup(htmlData)
             pinfo = bsContent.find('p',attrs={'class':'sumtext'}).get_text()  #要取到的剧的介绍
             pinfo = pinfo.replace("'", "\\'")
-            #print(str(pinfo))
             DivLarge = bsContent.find('aside',attrs={'class':'quikinfo'})
             DivSmall = DivLarge.findAll('li')
             #处理每周日期
-            #update_time = re.search(reString,str(DivSmall[1])).group()
-            #update_time = update_time[8:-6]
             update_time = DivSmall[0].a.get_text()
-            #print(update_time)
             #处理每集长度
-            #length = re.search(reString,str(DivSmall[2])).group()
-            #length = length[8:-6]
             length = DivSmall[1].get_text()
             length = length[17:]
-            #print(length)
             #查找地区、电视台
-            #area = re.search(reString,str(DivSmall[3])).group()
-            #area = area[8:-6]
             area = DivSmall[3].get_text()
             area = area[10:]
-            #channel = re.search(reString,str(DivSmall[2])).group()
-            #channel = channel[8:-6]
             channel = DivSmall[2].get_text()
             channel = channel[10:]
         
@@ -157,11 +144,9 @@ class Tools(object):
         htmlData = opener.open(req).read()
         if htmlData:
             bsContent = BeautifulSoup(htmlData)
-            #bsLists = bsContent.findAll('div',attrs = {'class':'box930 lists'})
             bsLists = bsContent.findAll('li',attrs = {'class':'parent'})
             print ('the len of biLists is '+str(len(bsLists)))
             for oneSeason in bsLists:
-                #print oneSeason.strong.get_text()
                 se_id = oneSeason.strong.get_text()
                 se_id = re.search('Season\s\d{1,2}',se_id).group()
                 se_id = se_id[7:]
@@ -173,7 +158,7 @@ class Tools(object):
                         e_num = e_num[1:]
                     #集名
                     e_name = oneEpisode.find('a',attrs = {'itemprop':'url'}).get_text()
-                    e_name = MySQLdb.escape_string(e_name)
+                    #e_name = MySQLdb.escape_string(e_name)
                     #播放时间
 
                     time_temp = oneEpisode.find('span',attrs = {'class':'datepub'})
@@ -215,65 +200,9 @@ class Tools(object):
                 flag = False
                 if flag == False:
                     break
-            exit(1)    
-            #if len(bsLists) >= 2:
-            #        pass
-            #elif len(bsLists) == 1:
-            #    bsLists.append(BeautifulSoup("<html><body><div>none</div></body></html>").find('div'))
-            #else:
-            #    for i in xrange(1,3):
-            #        bsLists.append(BeautifulSoup("<html><body><div>none</div></body></html>").find('div'))
-            #for bsToBeAired in bsLists[0].findAll('div'):  #遍历查找即将播放的集,如果没有则不执行该循环
-            # for bsToBeAired in bsLists[0].findAll('li'):  #遍历查找即将播放的集,如果没有则不执行该循环
-            #     seEpInfo = bsToBeAired.find('span',attrs = {'class' : 'epuntil'}).get_text()    #季与集的信息
-            #     season = re.search('S\d*',seEpInfo).group()     #首先用正则取出季，形如S02
-            #     if season[1] == '0':                            #之后将S和多余的0都去掉
-            #         season = season[2:]
-            #     else:
-            #         season = season[1:]
-            #     episode = re.search('E\d*',seEpInfo).group()    #同理对付集数
-            #     if episode[1] == '0':
-            #         episode = episode[2:]
-            #     else:
-            #         episode = episode[1:]
-            #     dateInfo = bsToBeAired.find('span',attrs = {'class' : 'epdate'}).get_text()     #接下来处理日期，比较折腾
-            #     year = re.search("'.*$",dateInfo).group()                                       #首先摘出形如‘16的表示年份的字串，并取出前面的’
-            #     year = year[1:]
-            #     month = re.search(' \w{3} ',dateInfo).group()                                   #接着取出三个代表月份的字母，形如Feb，并删除前后空格
-            #     month = month[1:-1]
-            #     day = re.search('^\d*',dateInfo).group()                                        #再之后取出日期，如果日期是个位数前面补零以保证yyyy-mm-dd的格式
-            #     if len(day) < 2:
-            #         day = '0'+day
-            #     time = bsToBeAired.find('span',attrs = {'class' : 'eptime'}).get_text()         #取出日期后开始调整时间，利用类似的方法获取小时和分钟
-            #     hour = re.search('\d{1,2}:',time).group()
-            #     hour = hour[:-1]
-            #     hour = string.atoi(hour)
-            #     minute = re.search(':\d{2}[a|p]m',time).group() 
-            #     #注意调整am和pm的时间差，另外需要注意的是这里的时间都是标准UTC时间，天朝使用需要+8
-            #     if (minute[-2] == 'p') and (hour != 12):
-            #         hour += 12
-            #     minute = minute[1:-2]
-                    
-            #     dateFormat = year + '-' +  self.month[month] + '-' + str(day) + ' ' + str(hour) + ':' + str(minute) +':00'
-            #     name =  bsToBeAired.find('span',attrs = {'class' : 'epname'}).get_text()
-            #     name = name[1:]
-            #     name = name.replace("'","\\'")
-                
-            #     episodeInfoToBeAired = {
-            #         's_id' : s_id,
-            #         'se_id' : season,
-            #         'e_num' : episode,
-            #         'e_name' : name,
-            #         'e_status' : u"即将播出",
-            #         'e_description' : '',
-            #         'e_time' : dateFormat
-
-            #     }
-            #     print(episodeInfoToBeAired)
-                #db.insertEpisode(episodeInfoToBeAired)
-                #db.insertEpisode(episodeInfoHaveAired)
 
     def test_connection(self):
+        #检查连接连通性，如联通则输出页面内容，如不则报失败
         urlTarget = 'http://www.pogdesign.co.uk/cat/'
         cookie = cookielib.CookieJar()
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie))

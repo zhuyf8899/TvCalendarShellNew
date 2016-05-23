@@ -9,7 +9,7 @@ import string
 import json
 import sys
 import math
-import MySQLdb
+#import MySQLdb
 from bs4 import BeautifulSoup
 from database import Database
 from log import Log
@@ -23,22 +23,6 @@ class Reader(object):
         self.log = Log()
         #剧名的字母顺序表
         self.AllShowsList = ['0','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
-        #月份换算表
-        self.month = {
-            'Jan' : '01',
-            'Feb' : '02',
-            'Mar' : '03',
-            'Apr' : '04',
-            'May' : '05',
-            'Jun' : '06',
-            'Jul' : '07',
-            'Aug' : '08',
-            'Sep' : '09',
-            'Oct' : '10',
-            'Nov' : '11',
-            'Dec' : '12'
-        }
-        
 
     def allShowsWork(self):
         #初步获取show的方法
@@ -60,19 +44,18 @@ class Reader(object):
                 try:
                     for OneBox in BeautifulSoup(htmlData).findAll('div', attrs={'class' : 'contbox prembox removed'}) : #用bs取到所有的小box，每个box是一个剧名
                         showName = BeautifulSoup(str(OneBox)).h2.get_text()
-                        showName = MySQLdb.escape_string(showName)
+                        #showName = MySQLdb.escape_string(showName)
                         imageURL = str(BeautifulSoup(str(OneBox)).a['style'])                                           #此处获取到的是图片URL的一段style的js连接，需要精加工
                         statusStringArray = BeautifulSoup(str(OneBox)).find('span',attrs={'class':'hil selby'})         #此处是要获得剧状态的span标签
+                        
                         #edit on 20160520由于原网页出现格式变化，改从注释中提取播放状态，一旦注释消失记得修改此处注释内容
                         statusString = str(statusStringArray).split('|')                                     #此处是要获得span标签中的内容，之后把|左半拉的内容取出来，但是由于含有空格需要精加工
                         #print(statusStringArray.get_text())#标签从这里入手
                         #print (str(statusStringArray))
-                        #statusString = [statusStringArray.get_text(),'0']
                         #这个是标签
                         tag = statusString[1][4:-8]
                         tag = tag.replace('Â ',' ')#过滤空格
-                        #tag = tag.replace("\'","\\'")
-                        tag = MySQLdb.escape_string(tag)
+                        #tag = MySQLdb.escape_string(tag)
                         #print(tag)                             
                         
                         aShow = {
@@ -82,7 +65,6 @@ class Reader(object):
                             'status' : statusString[0][29:-1]
                         }
                         #print(aShow)
-                        #exit(1) 
                         if aShow['s_name'] == '' or aShow['link'] == '' or aShow['status'] == '' :
                         #if aShow['s_name'] == '' or aShow['link'] == '' :
                             self.log.takeLog('WARNING','''allShowsWork function cannot collect data correctly, the vars are like below:\n s_name=%s,s_sibox_image=%s,link=%s,status=%s'''%(aShow['s_name'],aShow['s_sibox_image'],aShow['link'],aShow['status']))
@@ -112,31 +94,21 @@ class Reader(object):
         
         if htmlData:
             try:
-                #reString = '</span>\s.*</div>'  #要匹配的正则表达式
                 bsContent = BeautifulSoup(htmlData)
                 pinfo = bsContent.find('p',attrs={'class':'sumtext'}).get_text()  #要取到的剧的介绍
                 pinfo = pinfo.replace("'", "\\'")
-                #print(str(pinfo))
                 DivLarge = bsContent.find('aside',attrs={'class':'quikinfo'})
                 DivSmall = DivLarge.findAll('li')
                 #处理每周日期
-                #update_time = re.search(reString,str(DivSmall[1])).group()
-                #update_time = update_time[8:-6]
                 update_time = DivSmall[0].a.get_text()
                 #print(update_time)
                 #处理每集长度
-                #length = re.search(reString,str(DivSmall[2])).group()
-                #length = length[8:-6]
                 length = DivSmall[1].get_text()
                 length = length[17:]
                 #print(length)
                 #查找地区、电视台
-                #area = re.search(reString,str(DivSmall[3])).group()
-                #area = area[8:-6]
                 area = DivSmall[3].get_text()
                 area = area[10:]
-                #channel = re.search(reString,str(DivSmall[2])).group()
-                #channel = channel[8:-6]
                 channel = DivSmall[2].get_text()
                 channel = channel[10:]
             except Exception, ReErr:
@@ -162,9 +134,7 @@ class Reader(object):
             #下一步开始整季和集
             try:
                 bsLists = bsContent.findAll('li',attrs = {'class':'parent'})
-                #print ('the len of biLists is '+str(len(bsLists)))
                 for oneSeason in bsLists:
-                    #print oneSeason.strong.get_text()
                     se_id = oneSeason.strong.get_text()
                     se_id = re.search('Season\s\d{1,2}',se_id).group()
                     se_id = se_id[7:]
@@ -176,8 +146,7 @@ class Reader(object):
                             e_num = e_num[1:]
                         #集名
                         e_name = oneEpisode.find('a',attrs = {'itemprop':'url'}).get_text()
-                        #e_name = e_name.replace("'","\\'")
-                        e_name = MySQLdb.escape_string(e_name)
+                        #e_name = MySQLdb.escape_string(e_name)
                         #播放时间
 
                         time_temp = oneEpisode.find('span',attrs = {'class':'datepub'})
@@ -242,13 +211,3 @@ class Reader(object):
         except Exception, DBErr:
             self.log.takeLog('ERROR','Database Error:' + str(DBErr))
         return
-        
-
-    def testerInEpisode(self,s_id = 1):
-        #测试用方法，仅用于调试
-        return
-            
-
-
-
-

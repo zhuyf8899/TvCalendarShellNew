@@ -37,6 +37,7 @@ class Database(object):
     def insertShowFirstTime(self,obj):#obj中必须有s_name,link,status和s_sibox_image
         try:
             #首先从资源库中找id
+            obj['s_name'] = MySQLdb.escape_string(obj['s_name'])
             dbrc = self.connect('resource')
             dbrcHandler = dbrc.cursor()
             sqlGetResource = 'select zmz_resourceid from zmz_resource where resource_en_name = \'%s\' limit 1'%(obj['s_name'])
@@ -98,6 +99,8 @@ class Database(object):
 
     def updateShowDetail(self,obj):#obj中必须有s_id,s_description,update_time,area,channel和length
         try:
+            obj['s_description'] = MySQLdb.escape_string(obj['s_description'])
+            obj['channel'] = MySQLdb.escape_string(obj['channel'])
             dbc = self.connect()
             cursor = dbc.cursor()
             sqlUpdate = '''UPDATE `shows` SET `s_description` = \'%s\',`update_time` = \'%s\',`area` = \'%s\',`length` = \'%s\',`channel` = \'%s\' WHERE `s_id` = \'%s\''''%(obj['s_description'],obj['update_time'],obj['area'],obj['length'],obj['channel'],obj['s_id'])
@@ -160,13 +163,14 @@ class Database(object):
             return "Error"
     def insertEpisode(self,aRecord):
         try:
+            aRecord['e_name'] = MySQLdb.escape_string(aRecord['e_name'])
             dbc = self.connect()
             cursor = dbc.cursor()
             sqlCheck = '''select e_id,e_name,e_status,DATE_FORMAT(e_time,'%%Y-%%m-%%d %%T') from episode where s_id = %s AND se_id = %s AND e_num = %s'''%(aRecord['s_id'],aRecord['se_id'],aRecord['e_num'])
             cursor.execute(sqlCheck)
             checker = cursor.fetchone()
             if checker:
-                checkerOne = checker[1].replace("'","\\'")#此处不允许直接修改checker
+                checkerOne =  MySQLdb.escape_string(checker[1])#此处不允许直接修改checker
                 #print(checker)
                 if checkerOne == aRecord['e_name'] and checker[2] == aRecord['e_status'] and checker[3] == aRecord['e_time']:
                     print('An episode record has been existed:'+str(aRecord['s_id'])+':S'+str(aRecord['se_id'])+'E'+str(aRecord['e_num']))
@@ -213,6 +217,7 @@ class Database(object):
             return "Error"
     def insertTag(self,showId,tagName):
         try:
+            tagName = MySQLdb.escape_string(tagName)
             dbc = self.connect()
             cursor = dbc.cursor()
             sqlCheck = '''select t_id from tag where t_name = \'%s\' limit 1'''%(tagName)
@@ -309,4 +314,3 @@ class Database(object):
             self.log.takeLog('ERROR','Update table shows.s_name_cn error:'+str(e)+'\n the sql='+sqlUpdate)
             dbc.close()
             return "Error"
-
