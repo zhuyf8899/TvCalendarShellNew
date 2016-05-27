@@ -112,7 +112,7 @@ class Reader(object):
                 channel = DivSmall[2].get_text()
                 channel = channel[10:]
             except Exception, ReErr:
-                self.log.takeLog('ERROR','Regular Expression Error:' + str(ReErr))
+                self.log.takeLog('ERROR','Regular Expression Error:' + str(ReErr) + '\nThe html doc is like:' + str(htmlData))
             
             DetailOfShow = {
                 's_id' : s_id,
