@@ -141,8 +141,10 @@ class Reader(object):
                     se_id = oneSeason.strong.get_text()
                     se_id = re.search('Season\s\d{1,2}',se_id).group()
                     se_id = se_id[7:]
+                    
+                    epList = oneSeason.findAll('li',attrs = {'class':'ep info  RAWR'}) + oneSeason.findAll('li',attrs = {'class':'ep info '})
 
-                    for oneEpisode in oneSeason.findAll('li',attrs = {'class':'ep info  RAWR'}):
+                    for oneEpisode in epList:
                         #集数
                         e_num = oneEpisode.find('span',attrs = {'class':'pnumber'}).get_text()
                         if e_num[0] == '0':
@@ -171,8 +173,8 @@ class Reader(object):
                         
                         e_time += ' ' + str(hour) + ':' + minute + ':00'
 
-                        status_temp = oneEpisode.find('span',attrs = {'class':'paired'}).get_text()
-                        if status_temp == 'AIRED':
+                        status_temp = oneEpisode.find('span',attrs = {'class':'paired'})
+                        if status_temp:
                             e_status = u'已播放'
                         else:
                             e_status = u'即将播出'

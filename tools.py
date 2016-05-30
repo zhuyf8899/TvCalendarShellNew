@@ -151,11 +151,15 @@ class Tools(object):
             bsLists = bsContent.findAll('li',attrs = {'class':'parent'})
             print ('the len of biLists is '+str(len(bsLists)))
             for oneSeason in bsLists:
+                #print oneSeason
                 se_id = oneSeason.strong.get_text()
                 se_id = re.search('Season\s\d{1,2}',se_id).group()
                 se_id = se_id[7:]
 
-                for oneEpisode in oneSeason.findAll('li',attrs = {'class':'ep info  RAWR'}):
+                epList = oneSeason.findAll('li',attrs = {'class':'ep info  RAWR'}) + oneSeason.findAll('li',attrs = {'class':'ep info '})
+
+                for oneEpisode in epList:
+                    #print oneEpisode
                     #集数
                     e_num = oneEpisode.find('span',attrs = {'class':'pnumber'}).get_text()
                     if e_num[0] == '0':
@@ -184,8 +188,8 @@ class Tools(object):
                     
                     e_time += ' ' + str(hour) + ':' + minute + ':00'
 
-                    status_temp = oneEpisode.find('span',attrs = {'class':'paired'}).get_text()
-                    if status_temp == 'AIRED':
+                    status_temp = oneEpisode.find('span',attrs = {'class':'paired'})
+                    if status_temp:
                         e_status = u'已播放'
                     else:
                         e_status = u'即将播出'
