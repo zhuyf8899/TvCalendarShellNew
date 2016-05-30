@@ -49,11 +49,11 @@ class Reader(object):
                         statusStringArray = BeautifulSoup(str(OneBox)).find('span',attrs={'class':'hil selby'})         #此处是要获得剧状态的span标签
                         
                         #edit on 20160520由于原网页出现格式变化，改从注释中提取播放状态，一旦注释消失记得修改此处注释内容
-                        statusString = str(statusStringArray).split('|')                                     #此处是要获得span标签中的内容，之后把|左半拉的内容取出来，但是由于含有空格需要精加工
+                        statusString = str(statusStringArray)                                    #此处是要获得span标签中的内容，之后把|左半拉的内容取出来，但是由于含有空格需要精加工
                         #print(statusStringArray.get_text())#标签从这里入手
                         #print (str(statusStringArray))
                         #这个是标签
-                        tag = statusString[1][4:-8]
+                        tag = statusString[24:-8]
                         tag = tag.replace('Â ',' ')#过滤空格
                         #tag = MySQLdb.escape_string(tag)
                         #print(tag)                             
@@ -61,13 +61,12 @@ class Reader(object):
                         aShow = {
                             's_name' : showName,
                             's_sibox_image' : imageURL[22:-2],
-                            'link' : BeautifulSoup(str(OneBox)).a['href'],
-                            'status' : statusString[0][29:-1]
+                            'link' : BeautifulSoup(str(OneBox)).a['href']
                         }
                         #print(aShow)
-                        if aShow['s_name'] == '' or aShow['link'] == '' or aShow['status'] == '' :
-                        #if aShow['s_name'] == '' or aShow['link'] == '' :
-                            self.log.takeLog('WARNING','''allShowsWork function cannot collect data correctly, the vars are like below:\n s_name=%s,s_sibox_image=%s,link=%s,status=%s'''%(aShow['s_name'],aShow['s_sibox_image'],aShow['link'],aShow['status']))
+                        #if aShow['s_name'] == '' or aShow['link'] == '' or aShow['status'] == '' :
+                        if aShow['s_name'] == '' or aShow['link'] == '' or aShow['s_sibox_image'] == '':
+                            self.log.takeLog('WARNING','''allShowsWork function cannot collect data correctly, the vars are like below:\n s_name=%s,s_sibox_image=%s,link=%s'''%(aShow['s_name'],aShow['s_sibox_image'],aShow['link']))
                         db = Database(self.log,self.config)
                         Id = db.insertShowFirstTime(aShow)
                         if len(tag) != 0:
@@ -111,6 +110,9 @@ class Reader(object):
                 area = area[10:]
                 channel = DivSmall[2].get_text()
                 channel = channel[10:]
+                status = DivSmall[5].get_text()
+                status = status[14:]
+
             except Exception, ReErr:
                 self.log.takeLog('ERROR','Regular Expression Error:' + str(ReErr) + '\nThe html doc is like:' + str(htmlData))
             
@@ -120,9 +122,10 @@ class Reader(object):
                 'update_time' : update_time,
                 'length' : length,
                 'area' : area,
-                'channel' : channel
+                'channel' : channel,
+                'status' : status
             }
-            if DetailOfShow['area'] == '' or DetailOfShow['channel'] =='':
+            if DetailOfShow['area'] == '' or DetailOfShow['channel'] =='' or DetailOfShow['status'] =='':
                 self.log.takeLog('WARNING','''allShowsWork function cannot collect data correctly, the vars are like below:\nDetailOfShow:%s'''%(str(DetailOfShow)))
             try:
                 db = Database(self.log,self.config)

@@ -62,16 +62,16 @@ class Database(object):
             checker = cursor.fetchone()
             #print(checker)
             if checker:
-                if checker[2] == obj['status'] and checker[3] == obj['s_sibox_image'] and checker[4] == resourceId:
-                #if checker[3] == obj['s_sibox_image'] and checker[4] == resourceId:
+                #if checker[2] == obj['status'] and checker[3] == obj['s_sibox_image'] and checker[4] == resourceId:
+                if checker[3] == obj['s_sibox_image'] and checker[4] == resourceId:
                     dbc.close()
                     print("repeatShow:"+str(obj['s_name']))
                     return checker[0]
                 else:
                     if resourceId == '':
-                        sql = '''UPDATE `shows` SET  `status` =  \'%s\',`s_sibox_image` =  \'%s\',`link` =  \'%s\' WHERE  `shows`.`s_id` = %s;'''%(obj['status'],obj['s_sibox_image'],obj['link'],checker[0])
+                        sql = '''UPDATE `shows` SET  `s_sibox_image` =  \'%s\',`link` =  \'%s\' WHERE  `shows`.`s_id` = %s;'''%(obj['s_sibox_image'],obj['link'],checker[0])
                     else:
-                        sql = '''UPDATE `shows` SET  `status` =  \'%s\',`s_sibox_image` =  \'%s\',`link` =  \'%s\',`r_id` = \'%s\' WHERE  `shows`.`s_id` = %s;'''%(obj['status'],obj['s_sibox_image'],obj['link'],resourceId,checker[0])
+                        sql = '''UPDATE `shows` SET  `s_sibox_image` =  \'%s\',`link` =  \'%s\',`r_id` = \'%s\' WHERE  `shows`.`s_id` = %s;'''%(obj['s_sibox_image'],obj['link'],resourceId,checker[0])
                     #sql = '''UPDATE `shows` SET `s_sibox_image` =  \'%s\',`link` =  \'%s\',`r_id` = \'%s\' WHERE  `shows`.`s_id` = %s;'''%(obj['s_sibox_image'],obj['link'],resourceId,checker[0])
                     cursor.execute(sql)
                     dbc.commit()
@@ -80,9 +80,9 @@ class Database(object):
                     return checker[0]
             else:
                 if resourceId == '':
-                    sql = '''insert into shows(s_name,s_sibox_image,link,status) values(\'%s\',\'%s\',\'%s\',\'%s\')'''%(obj['s_name'],obj['s_sibox_image'],obj['link'],obj['status'])
+                    sql = '''insert into shows(s_name,s_sibox_image,link) values(\'%s\',\'%s\',\'%s\')'''%(obj['s_name'],obj['s_sibox_image'],obj['link'])
                 else:
-                    sql = '''insert into shows(s_name,s_sibox_image,link,r_id,status) values(\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')'''%(obj['s_name'],obj['s_sibox_image'],obj['link'],resourceId,obj['status'])
+                    sql = '''insert into shows(s_name,s_sibox_image,link,r_id) values(\'%s\',\'%s\',\'%s\',\'%s\')'''%(obj['s_name'],obj['s_sibox_image'],obj['link'],resourceId)
                 cursor.execute(sql)
                 dbc.commit()
                 sqlGetId = '''select s_id from shows where s_name = \'%s\' limit 1'''%(obj['s_name'])
@@ -97,13 +97,14 @@ class Database(object):
             dbc.close()
             return "Error"
 
-    def updateShowDetail(self,obj):#obj中必须有s_id,s_description,update_time,area,channel和length
+    def updateShowDetail(self,obj):#obj中必须有s_id,s_description,update_time,area,channel,status 和length
         try:
             obj['s_description'] = MySQLdb.escape_string(obj['s_description'])
             obj['channel'] = MySQLdb.escape_string(obj['channel'])
+            obj['status'] = MySQLdb.escape_string(obj['status'])
             dbc = self.connect()
             cursor = dbc.cursor()
-            sqlUpdate = '''UPDATE `shows` SET `s_description` = \'%s\',`update_time` = \'%s\',`area` = \'%s\',`length` = \'%s\',`channel` = \'%s\' WHERE `s_id` = \'%s\''''%(obj['s_description'],obj['update_time'],obj['area'],obj['length'],obj['channel'],obj['s_id'])
+            sqlUpdate = '''UPDATE `shows` SET `s_description` = \'%s\',`update_time` = \'%s\',`area` = \'%s\',`length` = \'%s\',`channel` = \'%s\',`status` = \'%s\' WHERE `s_id` = \'%s\''''%(obj['s_description'],obj['update_time'],obj['area'],obj['length'],obj['channel'],obj['status'],obj['s_id'])
             cursor.execute(sqlUpdate)
             dbc.commit()
             dbc.close()
