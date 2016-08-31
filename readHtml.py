@@ -147,7 +147,7 @@ class Reader(object):
                     for oneEpisode in epList:
                         #集数
                         e_num = oneEpisode.find('span',attrs = {'class':'pnumber'}).get_text()
-                        if e_num[0] == '0':
+                        if e_num[0] == '0' and len(e_num) > 1:
                             e_num = e_num[1:]
                         #集名
                         e_name = oneEpisode.find('a',attrs = {'itemprop':'url'}).get_text()
@@ -195,7 +195,7 @@ class Reader(object):
                     if firstTime == False:
                         break
             except Exception, DBErr2:
-                self.log.takeLog('ERROR','Database Error in have aired:' + str(DBErr2)) 
+                self.log.takeLog('ERROR','Database Error in have aired:[s_id is %s] [error info is ]'%(s_id) + str(DBErr2))
         return
             
 
