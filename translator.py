@@ -54,14 +54,14 @@ class Translator(object):
             self.log.takeLog('ERROR','Translator Error in tag:' + str(TransErr))
 
     def transShow(self,alert = 950):
-        #翻译剧名的方法，考虑到API限制，每次翻译不超过950次一面被封
+        #翻译剧名的方法，考虑到API限制，每次翻译不超过950次以免被封
         couterAlert = alert
         try:
             db = Database(self.log,self.config)
             shows = db.getAllShowsWithoutCN()
             if shows:
                 counter = 0
-                for showOne in shows:
+                for showOne in shows:                     
                     counter += 1
                     if counter > alert:
                         print('We have reached the alert!')
@@ -69,6 +69,7 @@ class Translator(object):
                         break
                     postfix = showOne[1].replace(' ','+')
                     url = self.config.transURL+postfix
+
                     cookie = cookielib.CookieJar()
                     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie))
                     req = urllib2.Request(
@@ -77,6 +78,12 @@ class Translator(object):
                     htmlData = ""
                     #获取网页原始数据
                     htmlData = opener.open(req).read()
+
+                    #处理翻译接口出现敏感词汇时
+                    if htmlData == "no query":
+                        db.updateShowsCN(showOne[0],showOne[1])
+                        self.log.takeLog('WARNING','Translator meets an strange word to translate:' + str(showOne[1]))
+                        continue
                     result = json.loads(htmlData)
                     s_name_cn = ''
                     if result:
@@ -100,3 +107,4 @@ class Translator(object):
             return
         except Exception, TransErr:
             self.log.takeLog('ERROR','Translator Error in shows:' + str(TransErr))
+
